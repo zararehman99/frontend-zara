@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite"
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
-import { TextInput, TextStyle, ViewStyle } from "react-native"
+import { TextInput, TextStyle, ViewStyle, ImageBackground } from "react-native"
 import { Button, Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "../components"
 import { useStores } from "../models"
 import { AppStackScreenProps } from "../navigators"
@@ -28,8 +28,8 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen(_
   useEffect(() => {
     // Here is where you could fetch credentials from keychain or storage
     // and pre-fill the form fields.
-    setAuthEmail("ignite@infinite.red")
-    setAuthPassword("ign1teIsAwes0m3")
+    setAuthEmail("latch@example.com")
+    setAuthPassword("latch12345")
 
     // Return a "cleanup" function that React will run when the component unmounts
     return () => {
@@ -78,8 +78,8 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen(_
       contentContainerStyle={themed($screenContentContainer)}
       safeAreaEdges={["top", "bottom"]}
     >
-      <Text testID="login-heading" tx="loginScreen:logIn" preset="heading" style={themed($logIn)} />
-      <Text tx="loginScreen:enterDetails" preset="subheading" style={themed($enterDetails)} />
+      <Text testID="login-heading" tx="loginScreen:welcomeBabi" preset="heading" style={themed($logIn)} />
+      {/* <Text tx="loginScreen:enterDetails" preset="subheading" style={themed($enterDetails)} /> */}
       {attemptsCount > 2 && (
         <Text tx="loginScreen:hint" size="sm" weight="light" style={themed($hint)} />
       )}
@@ -131,6 +131,7 @@ const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 })
 
 const $logIn: ThemedStyle<TextStyle> = ({ spacing }) => ({
+  textAlign: "center",
   marginBottom: spacing.sm,
 })
 
