@@ -13,7 +13,7 @@ import { useStores } from "../models"
 import { DemoNavigator, DemoTabParamList } from "./DemoNavigator"
 import { navigationRef, useBackButtonHandler } from "./navigationUtilities"
 import { useAppTheme, useThemeProvider } from "@/utils/useAppTheme"
-import { ComponentProps } from "react"
+import React, { ComponentProps } from "react"
 
 /**
  * This type allows TypeScript to know what routes are defined in this navigator
