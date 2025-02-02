@@ -78,7 +78,8 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen(_
       contentContainerStyle={themed($screenContentContainer)}
       safeAreaEdges={["top", "bottom"]}
     >
-      <Text testID="login-heading" tx="loginScreen:welcomeBabi" preset="heading" style={themed($logIn)} />
+      <Text testID="login-heading" tx="loginScreen:welcome" preset="heading" style={themed($logIn)} />
+      <Text testID="login-heading" tx="loginScreen:babi" preset="heading" style={themed($logIn)} />
       {/* <Text tx="loginScreen:enterDetails" preset="subheading" style={themed($enterDetails)} /> */}
       {attemptsCount > 2 && (
         <Text tx="loginScreen:hint" size="sm" weight="light" style={themed($hint)} />
