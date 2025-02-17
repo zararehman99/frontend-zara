@@ -56,7 +56,7 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
         />
       </View>
 
-      <View style={themed([$bottomContainer, $bottomContainerInsets])}>
+      {/* <View style={themed([$bottomContainer, $bottomContainerInsets])}>
         <Text tx="welcomeScreen:postscript" size="md" />
 
         <Button
@@ -65,7 +65,7 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
           tx="welcomeScreen:letsGo"
           onPress={goNext}
         />
-      </View>
+      </View> */}
     </Screen>
   )
 })

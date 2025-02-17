@@ -9,7 +9,7 @@ import { useAppTheme } from "@/utils/useAppTheme"
 
 interface LoginScreenProps extends AppStackScreenProps<"Login"> {}
 
-export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen(_props) {
+export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function LoginScreen({ navigation }) {
   const authPasswordInput = useRef<TextInput>(null)
 
   const [authPassword, setAuthPassword] = useState("")
@@ -54,6 +54,10 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen(_
 
     // We'll mock this with a fake token.
     setAuthToken(String(Date.now()))
+  }
+
+  function register() {
+    navigation.navigate("Register")
   }
 
   const PasswordRightAccessory: ComponentType<TextFieldAccessoryProps> = useMemo(
@@ -122,6 +126,15 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen(_
         preset="reversed"
         onPress={login}
       />
+
+      <Button
+        testID="login-button"
+        tx="loginScreen:createANewAccount"
+        style={themed($tapButton)}
+        preset="reversed"
+        onPress={register}
+      />
+
     </Screen>
   )
 })

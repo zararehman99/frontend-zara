@@ -44,6 +44,19 @@ const en = {
     passwordFieldPlaceholder: "Super secret password here",
     tapToLogIn: "Tap to log in!",
     hint: "Hint: you can use any email address and your favorite password :)",
+    createANewAccount: "Create a new account",
+  },
+  "registerScreen": {
+    "welcome": "Create an Account",
+    "enterDetails": "Enter your details below",
+    "emailFieldLabel": "Email",
+    "emailFieldPlaceholder": "Enter your email",
+    "passwordFieldLabel": "Password",
+    "passwordFieldPlaceholder": "Enter your password",
+    "confirmPasswordFieldLabel": "Confirm Password",
+    "confirmPasswordFieldPlaceholder": "Re-enter your password",
+    "tapToRegister": "Register",
+    "goToLogin": "Already have an account? Log in"
   },
   demoNavigator: {
     componentsTab: "Components",
