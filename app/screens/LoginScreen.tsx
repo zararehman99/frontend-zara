@@ -149,10 +149,6 @@ const $logIn: ThemedStyle<TextStyle> = ({ spacing }) => ({
   marginBottom: spacing.sm,
 })
 
-const $enterDetails: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
-})
-
 const $hint: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   color: colors.tint,
   marginBottom: spacing.md,

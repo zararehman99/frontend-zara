@@ -1,10 +1,11 @@
 import { observer } from "mobx-react-lite"
 import React, { FC, useEffect, useState, useRef } from "react"
-import { TextInput } from "react-native"
+import { TextInput, TextStyle, ViewStyle } from "react-native"
 import { Button, Screen, Text, TextField } from "@/components"
 import { useStores } from "@/models"
 import { useAppTheme } from "@/utils/useAppTheme"
 import { AppStackScreenProps } from "@/navigators"
+import type { ThemedStyle } from "@/theme"
 
 export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
   function RegisterScreen({ navigation }) {
@@ -42,13 +43,14 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
     }
 
     return (
-      <Screen preset="auto" contentContainerStyle={themed({ padding: 20 })}>
+      <Screen preset="auto" contentContainerStyle={themed($screenContentContainer)}>
         {/* <Text tx="registerScreen:welcome" preset="heading" />
         <Text tx="registerScreen:enterDetails" preset="subheading" /> */}
 
         <TextField
           value={email}
           onChangeText={setEmail}
+          containerStyle={themed($textField)}
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
@@ -58,6 +60,7 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
         <TextField
           value={fullName}
           onChangeText={setFullName}
+          containerStyle={themed($textField)}
           autoCapitalize="none"
           placeholderTx="registerScreen:fullNameFieldPlaceholder"
         />
@@ -66,6 +69,7 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
           ref={authPasswordInput}
           value={password}
           onChangeText={setPassword}
+          containerStyle={themed($textField)}
           secureTextEntry
           autoCapitalize="none"
           autoComplete="password"
@@ -75,17 +79,36 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
         <TextField
           value={confirmPassword}
           onChangeText={setConfirmPassword}
+          containerStyle={themed($textField)}
           secureTextEntry
           autoCapitalize="none"
           placeholderTx="registerScreen:confirmPasswordFieldPlaceholder"
         />
 
-        <Text tx="registerScreen:conditions" preset="default" />
+        <Text tx="registerScreen:conditions" style={themed($hint)}  />
 
-        <Button tx="registerScreen:tapToRegister" onPress={register} />
+        <Button tx="registerScreen:tapToRegister" style={themed($tapButton)} onPress={register} />
 
-        <Button tx="registerScreen:goToLogin" onPress={() => navigation.navigate("Login")} />
+        <Button tx="registerScreen:goToLogin" style={themed($tapButton)} onPress={() => navigation.navigate("Login")} />
       </Screen>
     )
   }
 )
+
+const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingVertical: spacing.xxl,
+  paddingHorizontal: spacing.lg,
+})
+
+const $hint: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
+  color: colors.text,
+  marginBottom: spacing.md,
+})
+
+const $textField: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.lg,
+})
+
+const $tapButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginTop: spacing.xs,
+})
