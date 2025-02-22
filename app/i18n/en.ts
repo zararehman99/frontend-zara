@@ -49,14 +49,13 @@ const en = {
   registerScreen: {
     welcome: "Create an Account",
     enterDetails: "Enter your details below",
-    emailFieldLabel: "Email",
-    emailFieldPlaceholder: "Enter your email",
-    passwordFieldLabel: "Password",
-    passwordFieldPlaceholder: "Enter your password",
-    confirmPasswordFieldLabel: "Confirm Password",
-    confirmPasswordFieldPlaceholder: "Re-enter your password",
+    emailFieldPlaceholder: "Email",
+    fullNameFieldPlaceholder: "Full Name",
+    passwordFieldPlaceholder: "Password",
+    confirmPasswordFieldPlaceholder: "Confirm Password",
     tapToRegister: "Register",
-    goToLogin: "Already have an account? Log in"
+    goToLogin: "Already have an account? Log in",
+    conditions: "By continuing, you agree with our Term & Conditions and Privacy Policy.",
   },
   demoNavigator: {
     componentsTab: "Components",

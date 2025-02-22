@@ -11,6 +11,7 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
     const authPasswordInput = useRef<TextInput>(null)
 
     const [email, setEmail] = useState("")
+    const [fullName, setFullName] = useState("")
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
     const [isSubmitted, setIsSubmitted] = useState(false)
@@ -42,8 +43,8 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
 
     return (
       <Screen preset="auto" contentContainerStyle={themed({ padding: 20 })}>
-        <Text tx="registerScreen:welcome" preset="heading" />
-        <Text tx="registerScreen:enterDetails" preset="subheading" />
+        {/* <Text tx="registerScreen:welcome" preset="heading" />
+        <Text tx="registerScreen:enterDetails" preset="subheading" /> */}
 
         <TextField
           value={email}
@@ -51,8 +52,14 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
-          labelTx="registerScreen:emailFieldLabel"
           placeholderTx="registerScreen:emailFieldPlaceholder"
+        />
+
+        <TextField
+          value={fullName}
+          onChangeText={setFullName}
+          autoCapitalize="none"
+          placeholderTx="registerScreen:fullNameFieldPlaceholder"
         />
 
         <TextField
@@ -62,7 +69,6 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
           secureTextEntry
           autoCapitalize="none"
           autoComplete="password"
-          labelTx="registerScreen:passwordFieldLabel"
           placeholderTx="registerScreen:passwordFieldPlaceholder"
         />
 
@@ -71,9 +77,10 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
           onChangeText={setConfirmPassword}
           secureTextEntry
           autoCapitalize="none"
-          labelTx="registerScreen:confirmPasswordFieldLabel"
           placeholderTx="registerScreen:confirmPasswordFieldPlaceholder"
         />
+
+        <Text tx="registerScreen:conditions" preset="default" />
 
         <Button tx="registerScreen:tapToRegister" onPress={register} />
 

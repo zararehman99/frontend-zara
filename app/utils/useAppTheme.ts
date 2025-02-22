@@ -32,7 +32,9 @@ const setImperativeTheming = (theme: Theme) => {
 }
 
 export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
-  const colorScheme = useColorScheme()
+  // For now using default color scheme light
+  // const colorScheme = useColorScheme()
+  const colorScheme = "light"
   const [overrideTheme, setTheme] = useState<ThemeContexts>(initialTheme)
 
   const setThemeContextOverride = useCallback((newTheme: ThemeContexts) => {
