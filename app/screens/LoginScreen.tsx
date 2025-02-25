@@ -1,15 +1,15 @@
 import { observer } from "mobx-react-lite"
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
-import { TextInput, TextStyle, ViewStyle, ImageBackground } from "react-native"
+import { TextInput, TextStyle, ViewStyle } from "react-native"
 import { Button, Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "../components"
 import { useStores } from "../models"
 import { AppStackScreenProps } from "../navigators"
 import type { ThemedStyle } from "@/theme"
 import { useAppTheme } from "@/utils/useAppTheme"
 
-interface LoginScreenProps extends AppStackScreenProps<"Login"> {}
-
-export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function LoginScreen({ navigation }) {
+export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function LoginScreen({
+  navigation,
+}) {
   const authPasswordInput = useRef<TextInput>(null)
 
   const [authPassword, setAuthPassword] = useState("")
@@ -82,7 +82,12 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
       contentContainerStyle={themed($screenContentContainer)}
       safeAreaEdges={["top", "bottom"]}
     >
-      <Text testID="login-heading" tx="loginScreen:welcome" preset="heading" style={themed($logIn)} />
+      <Text
+        testID="login-heading"
+        tx="loginScreen:welcome"
+        preset="heading"
+        style={themed($logIn)}
+      />
       <Text testID="login-heading" tx="loginScreen:babi" preset="heading" style={themed($logIn)} />
       {/* <Text tx="loginScreen:enterDetails" preset="subheading" style={themed($enterDetails)} /> */}
       {attemptsCount > 2 && (
@@ -134,7 +139,6 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
         preset="reversed"
         onPress={register}
       />
-
     </Screen>
   )
 })
