@@ -24,7 +24,7 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
   } = useStores()
 
   function goNext() {
-    navigation.navigate("Demo", { screen: "DemoShowroom", params: {} })
+    navigation.navigate("Chat")
   }
 
   useHeader(
@@ -55,6 +55,13 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
           tintColor={theme.isDark ? theme.colors.palette.neutral900 : undefined}
         />
       </View>
+
+      <Button
+          testID="next-screen-button"
+          preset="reversed"
+          tx="welcomeScreen:letsGo"
+          onPress={goNext}
+        />
 
       {/* <View style={themed([$bottomContainer, $bottomContainerInsets])}>
         <Text tx="welcomeScreen:postscript" size="md" />
