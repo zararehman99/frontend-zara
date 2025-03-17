@@ -26,6 +26,14 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
     navigation.navigate("Feeds")
   }
 
+  function goToBabyHealthSleep() {
+    navigation.navigate("BabyHealthSleep")
+  }
+
+  function goToPump() {
+    navigation.navigate("Pump")
+  }
+
   const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
   const $topContainerInsets = useSafeAreaInsetsStyle(["top"])
 
@@ -41,8 +49,8 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
         
         <View style={$buttonContainer}>
           <Button style={$button} textStyle={$buttonText}  onPress={goToFeeds}>Feeds</Button>
-          <Button style={$button} textStyle={$buttonText}  onPress={() => console.log("Baby Health & Sleep clicked")}>Baby Health & Sleep</Button>
-          <Button style={$button} textStyle={$buttonText}  onPress={() => console.log("Pump clicked")}>Pump</Button>
+          <Button style={$button} textStyle={$buttonText} onPress={goToBabyHealthSleep}>Baby Health & Sleep</Button>
+          <Button style={$button} textStyle={$buttonText} onPress={goToPump}>Pump</Button>
           <Button style={$aiButton} onPress={goNext}>
             AI Assistant
           </Button>
