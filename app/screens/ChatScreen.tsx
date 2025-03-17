@@ -114,7 +114,7 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
             onPress={sendMessage}
             style={themed($sendButton)}
           >
-            {/* <Icon icon="send" /> */}
+            <Icon icon="caretRight" /> 
           </Button>
         </View>
       </Screen>
