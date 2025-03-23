@@ -1,20 +1,21 @@
 import { observer } from "mobx-react-lite"
-import { FC } from "react"
-import { View, ViewStyle, TextStyle, ScrollView } from "react-native"
+import { FC, useState } from "react"
+import { Modal, View, ViewStyle, TextStyle, ScrollView } from "react-native"
 import { Button, Text, Screen, Header } from "@/components"
 import { AppStackScreenProps } from "../navigators"
-import { $styles } from "@/theme"
 import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
-import { useAppTheme } from "@/utils/useAppTheme"
+import { TextInput } from "react-native-gesture-handler"
 
 interface PumpScreenProps extends AppStackScreenProps<"Pump"> {}
 
 export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_props) {
-  const { themed, theme } = useAppTheme()
   const { navigation } = _props
 
   const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
-  const $topContainerInsets = useSafeAreaInsetsStyle(["top"])
+
+  const [sessionModalVisible, setSessionModalVisible] = useState(false)
+  const [inventoryModalVisible, setInventoryModalVisible] = useState(false)
+  const [statisticsModalVisible, setStatisticsModalVisible] = useState(false)
 
   function goBack() {
     navigation.goBack()
@@ -22,21 +23,23 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
 
   return (
     <Screen preset="scroll" contentContainerStyle={$screenContainer}>
-      <Header
-        title="Pump Tracking"
-        leftIcon="back"
-        onLeftPress={goBack}
-      />
-      
+      <Header title="Pump Tracking" leftIcon="back" onLeftPress={goBack} />
+
       <ScrollView style={$scrollContainer}>
         <View style={$sectionContainer}>
-          <Text style={$sectionTitle}>Today's Sessions</Text>
+          <Text style={$sectionTitle}>Today&apos;s Sessions</Text>
           <View style={$card}>
             <Text style={$cardTitle}>Last Session</Text>
             <Text style={$cardText}>Time: 9:45 AM</Text>
             <Text style={$cardText}>Duration: 18 minutes</Text>
             <Text style={$cardText}>Volume: 4 oz (120 ml)</Text>
-            <Button style={$primaryButton} textStyle={$buttonText}>Start New Session</Button>
+            <Button
+              style={$primaryButton}
+              textStyle={$buttonText}
+              onPress={() => setSessionModalVisible(true)}
+            >
+              Start New Session
+            </Button>
           </View>
         </View>
 
@@ -47,7 +50,13 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
             <Text style={$cardText}>Refrigerated: 12 oz (355 ml)</Text>
             <Text style={$cardText}>Frozen: 28 oz (830 ml)</Text>
             <Text style={$cardText}>Oldest batch: 3 days ago</Text>
-            <Button style={$secondaryButton} textStyle={$buttonText}>Update Inventory</Button>
+            <Button
+              style={$secondaryButton}
+              textStyle={$buttonText}
+              onPress={() => setInventoryModalVisible(true)}
+            >
+              Update Inventory
+            </Button>
           </View>
         </View>
 
@@ -58,23 +67,144 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
             <Text style={$cardText}>Total sessions: 18</Text>
             <Text style={$cardText}>Average duration: 22 minutes</Text>
             <Text style={$cardText}>Total volume: 52 oz (1540 ml)</Text>
-            <Button style={$secondaryButton} textStyle={$buttonText}>View Full Statistics</Button>
+            <Button
+              style={$secondaryButton}
+              textStyle={$buttonText}
+              onPress={() => setStatisticsModalVisible(true)}
+            >
+              View Full Statistics
+            </Button>
           </View>
         </View>
       </ScrollView>
 
       <View style={[$bottomButtonContainer, $bottomContainerInsets]}>
-        <Button
-          style={$bottomButton}
-          textStyle={$buttonText}
-          onPress={goBack}
-        >
+        <Button style={$bottomButton} textStyle={$buttonText} onPress={goBack}>
           Back to Home
         </Button>
       </View>
+
+      <Modal visible={sessionModalVisible} transparent={true} animationType="fade">
+        <View style={$modalOverlay}>
+          <View style={$modalContainer}>
+            <Text style={$modalTitle}>Start New Session</Text>
+            <TextInput style={$input} placeholder="Enter session duration (e.g., 3h 24m)" />
+            <TextInput style={$input} placeholder="Enter session volume (e.g., 4 oz)" />
+            <View style={$buttonContainer}>
+              <Button
+                style={$button}
+                textStyle={$buttonText}
+                onPress={() => setSessionModalVisible(false)}
+              >
+                Save
+              </Button>
+              <Button
+                style={$cancelButton}
+                textStyle={$buttonText}
+                onPress={() => setSessionModalVisible(false)}
+              >
+                Cancel
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={inventoryModalVisible} transparent={true} animationType="fade">
+        <View style={$modalOverlay}>
+          <View style={$modalContainer}>
+            <Text style={$modalTitle}>Update Inventory</Text>
+            <TextInput style={$input} placeholder="Enter amount of milk to add (e.g., 4 oz)" />
+            <TextInput style={$input} placeholder="Enter type of milk (e.g., Frozen)" />
+            <View style={$buttonContainer}>
+              <Button
+                style={$button}
+                textStyle={$buttonText}
+                onPress={() => setInventoryModalVisible(false)}
+              >
+                Save
+              </Button>
+              <Button
+                style={$cancelButton}
+                textStyle={$buttonText}
+                onPress={() => setInventoryModalVisible(false)}
+              >
+                Cancel
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={statisticsModalVisible} transparent={true} animationType="fade">
+        <View style={$modalOverlay}>
+          <View style={$modalContainer}>
+            <Text style={$modalTitle}>View Full Statistics</Text>
+            <Text style={$cardText}>Total sessions: 18</Text>
+            <Text style={$cardText}>Average duration: 22 minutes</Text>
+            <Text style={$cardText}>Total volume: 52 oz (1540 ml)</Text>
+            <Button
+              style={$button}
+              textStyle={$buttonText}
+              onPress={() => setStatisticsModalVisible(false)}
+            >
+              Close
+            </Button>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   )
 })
+
+const $modalOverlay: ViewStyle = {
+  flex: 1,
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  justifyContent: "center",
+  alignItems: "center",
+}
+
+const $modalContainer: ViewStyle = {
+  width: "80%",
+  backgroundColor: "white",
+  padding: 20,
+  borderRadius: 12,
+  alignItems: "center",
+}
+
+const $modalTitle: TextStyle = {
+  fontSize: 20,
+  fontWeight: "bold",
+  marginBottom: 10,
+}
+
+const $input: ViewStyle = {
+  width: "100%",
+  borderWidth: 1,
+  borderColor: "#ccc",
+  padding: 10,
+  borderRadius: 8,
+  marginBottom: 10,
+}
+
+const $buttonContainer: ViewStyle = {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  width: "100%",
+  marginTop: 10,
+}
+
+const $button: ViewStyle = {
+  backgroundColor: "#007AFF",
+  flex: 1,
+  marginHorizontal: 5,
+}
+
+const $cancelButton: ViewStyle = {
+  flex: 1,
+  backgroundColor: "red",
+  marginLeft: 5,
+}
 
 const $screenContainer: ViewStyle = {
   flex: 1,

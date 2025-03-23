@@ -1,36 +1,42 @@
-import { observer } from "mobx-react-lite" 
-import { FC } from "react"
-import { Image, ImageStyle, StyleSheet, TextStyle, View, ViewStyle } from "react-native"
+import { observer } from "mobx-react-lite"
+import { FC, useState } from "react"
+import { Image, Modal, ImageStyle, TextStyle, View, ViewStyle } from "react-native"
 import { Button, Header, Screen, Text } from "@/components"
 import { AppStackScreenProps } from "../navigators"
-import { $styles } from "@/theme"
-import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
-import { useAppTheme } from "@/utils/useAppTheme"
+import { TextInput } from "react-native-gesture-handler"
 
 const babyImage = require("../../assets/images/baby_profile.jpg") // Replace with your actual baby image path
 
 interface FeedsScreenProps extends AppStackScreenProps<"Feeds"> {}
 
 export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_props) {
-  const { themed, theme } = useAppTheme()
   const { navigation } = _props
-  const $topInsets = useSafeAreaInsetsStyle(["top"])
+
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [feedType, setFeedType] = useState("")
+  const [amount, setAmount] = useState("")
+  const [duration, setDuration] = useState("")
+
+  const toggleModal = () => {
+    setIsModalVisible(!isModalVisible)
+  }
+
+  const handleSaveFeed = () => {
+    console.log({ feedType, amount, duration })
+    toggleModal()
+  }
 
   return (
     <Screen preset="scroll" contentContainerStyle={$container}>
-      <Header 
-        title="Baby Feeds" 
-        leftIcon="back" 
-        onLeftPress={() => navigation.goBack()}
-      />
-      
+      <Header title="Baby Feeds" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+
       <View style={$profileContainer}>
         <Image source={babyImage} style={$profileImage} resizeMode="cover" />
-        
+
         <View style={$profileInfo}>
           <Text style={$nameText}>Baby Noah</Text>
           <Text style={$ageText}>6 months old</Text>
-          
+
           <View style={$statsContainer}>
             <View style={$statItem}>
               <Text style={$statValue}>8</Text>
@@ -38,7 +44,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
             </View>
             <View style={$statItem}>
               <Text style={$statValue}>24 oz</Text>
-              <Text style={$statLabel}>Today's Intake</Text>
+              <Text style={$statLabel}>Today&apos;s Intake</Text>
             </View>
             <View style={$statItem}>
               <Text style={$statValue}>3h 20m</Text>
@@ -47,11 +53,11 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
           </View>
         </View>
       </View>
-      
+
       {/* Rest of the component remains the same */}
       <View style={$feedHistoryContainer}>
         <Text style={$sectionTitle}>Recent Feeds</Text>
-        
+
         <View style={$feedItem}>
           <View style={$feedTimeContainer}>
             <Text style={$feedTime}>8:30 AM</Text>
@@ -62,7 +68,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
             <Text style={$feedDuration}>18 minutes</Text>
           </View>
         </View>
-        
+
         <View style={$feedItem}>
           <View style={$feedTimeContainer}>
             <Text style={$feedTime}>5:45 AM</Text>
@@ -73,7 +79,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
             <Text style={$feedAmount}>4 oz formula</Text>
           </View>
         </View>
-        
+
         <View style={$feedItem}>
           <View style={$feedTimeContainer}>
             <Text style={$feedTime}>11:30 PM</Text>
@@ -86,12 +92,96 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
         </View>
       </View>
 
-      <Button style={$addFeedButton} onPress={() => console.log("Add feed clicked")}>
+      <Button style={$addFeedButton} onPress={toggleModal}>
         Add New Feed
       </Button>
+
+      <Modal visible={isModalVisible} animationType="slide" transparent={true}>
+        <View style={$modalOverlay}>
+          <View style={$modalCotainer}>
+            <Text style={$modalTitle}>Add New Feed</Text>
+            <TextInput
+              style={$input}
+              value={feedType}
+              onChangeText={setFeedType}
+              placeholder="Feed Type (Breast/Bottle)"
+            />
+            <TextInput
+              style={$input}
+              value={amount}
+              onChangeText={setAmount}
+              placeholder="Amount (oz)"
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={$input}
+              value={duration}
+              onChangeText={setDuration}
+              placeholder="Duration (mins)"
+              keyboardType="numeric"
+            />
+            <View style={$buttonContainer}>
+              <Button style={$button} onPress={handleSaveFeed}>
+                Save Feed
+              </Button>
+              <Button style={$cancelButton} onPress={toggleModal}>
+                Cancel
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   )
 })
+
+const $modalOverlay: ViewStyle = {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.5)",
+  justifyContent: "center",
+  alignItems: "center",
+}
+
+const $modalCotainer: ViewStyle = {
+  width: "80%",
+  backgroundColor: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  alignItems: "center",
+}
+
+const $modalTitle: TextStyle = {
+  fontSize: 20,
+  fontWeight: "bold",
+  marginBottom: 10,
+}
+
+const $input: ViewStyle = {
+  width: "100%",
+  borderWidth: 1,
+  borderColor: "#ccc",
+  padding: 10,
+  borderRadius: 8,
+  marginBottom: 10,
+}
+
+const $buttonContainer: ViewStyle = {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  width: "100%",
+  marginTop: 10,
+}
+
+const $button: ViewStyle = {
+  flex: 1,
+  marginRight: 5,
+}
+
+const $cancelButton: ViewStyle = {
+  flex: 1,
+  backgroundColor: "red",
+  marginLeft: 5,
+}
 
 // Style definitions
 const $container: ViewStyle = {
