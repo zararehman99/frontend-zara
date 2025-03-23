@@ -1,11 +1,15 @@
 import { observer } from "mobx-react-lite"
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
-import { TextInput, TextStyle, ViewStyle } from "react-native"
+import { TextInput, ImageBackground,  TextStyle, ViewStyle } from "react-native"
 import { Button, Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "../components"
 import { useStores } from "../models"
 import { AppStackScreenProps } from "../navigators"
-import type { ThemedStyle } from "@/theme"
+import { $styles, type ThemedStyle } from "@/theme"
 import { useAppTheme } from "@/utils/useAppTheme"
+
+const loginFace = require("../../assets/images/loginFace.jpg") // Background image
+
+const loginLogo = require("../../assets/images/latchLogo.png") // Background image
 
 export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function LoginScreen({
   navigation,
@@ -77,11 +81,15 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
   )
 
   return (
-    <Screen
-      preset="auto"
-      contentContainerStyle={themed($screenContentContainer)}
-      safeAreaEdges={["top", "bottom"]}
-    >
+    
+      <Screen preset="fixed" contentContainerStyle={$styles.flex1}>
+
+
+      <ImageBackground source={loginFace} style={$backgroundImage} resizeMode="cover">
+      <ImageBackground source={loginLogo} style={$logo} resizeMode="cover">
+        
+      </ImageBackground>
+
       <Text
         testID="login-heading"
         tx="loginScreen:welcome"
@@ -139,9 +147,36 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
         preset="reversed"
         onPress={register}
       />
+  </ImageBackground>
+
+
     </Screen>
   )
 })
+
+
+const $backgroundImage: ViewStyle = {
+  flex: 1,
+  width: "100%",
+  height: "100%",
+  position: "absolute",
+  margin:0,
+  padding: 10, 
+
+}
+
+
+      const $logo: ViewStyle = {
+        width: "50%",
+        height: "22%",
+        position: "relative",
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        margin:0,
+        padding: 10, 
+      }
+
 
 const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.xxl,

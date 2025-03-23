@@ -9,7 +9,9 @@ import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
 import { useAppTheme } from "@/utils/useAppTheme"
 
 
-const welcomeFace = require("../../assets/images/9.jpg") // Background image
+const welcomeFace = require("../../assets/images/welcomeImage.jpg") // Background image
+
+const latchLogo = require("../../assets/images/latchLogo.png") // latch logo
 
 interface WelcomeScreenProps extends AppStackScreenProps<"Welcome"> {}
 
@@ -40,6 +42,9 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
   return (
     <Screen preset="fixed" contentContainerStyle={$styles.flex1}>
       <ImageBackground source={welcomeFace} style={$backgroundImage} resizeMode="cover">
+        <ImageBackground source={latchLogo} style={$logo} resizeMode="center"> 
+
+        </ImageBackground>
         {/* Logout button at top right */}
         <View style={[$logoutButtonContainer, $topContainerInsets]}>
           <Button style={$logoutButton} onPress={logout}>
@@ -48,7 +53,7 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
         </View>
         
         <View style={$buttonContainer}>
-          <Button style={$button} textStyle={$buttonText}  onPress={goToFeeds}>Feeds</Button>
+          <Button style={$button} textStyle={$buttonText} onPress={goToFeeds}>Feeds</Button>
           <Button style={$button} textStyle={$buttonText} onPress={goToBabyHealthSleep}>Baby Health & Sleep</Button>
           <Button style={$button} textStyle={$buttonText} onPress={goToPump}>Pump</Button>
           <Button style={$aiButton} onPress={goNext}>
@@ -60,6 +65,22 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
     </Screen>
   )
 })
+
+
+
+
+
+const $logo: ViewStyle = {
+  width: "50%",
+  height: "22%",
+  position: "relative",
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  margin:0,
+  padding: 20, 
+}
+
 
 const $backgroundImage: ViewStyle = {
   flex: 1,
