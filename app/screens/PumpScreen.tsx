@@ -5,13 +5,109 @@ import { Button, Text, Screen, Header } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
 import { TextInput } from "react-native-gesture-handler"
+import { Picker } from "@react-native-picker/picker"
+import Toast from "react-native-toast-message"
+import configDev from "@/config/config.dev"
 
 interface PumpScreenProps extends AppStackScreenProps<"Pump"> {}
 
 export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_props) {
-  const { navigation } = _props
-
+  const { navigation, route } = _props
+  const { babyId } = route.params
   const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
+  const [sessionDurationError, setSessionDurationError] = useState("")
+  const [sessionVolumeError, setSessionVolumeError] = useState("")
+  const [inventoryAmountError, setInventoryAmountError] = useState("")
+
+  const [sessionFormData, setSessionFormData] = useState({
+    sessionDuration: "",
+    sessionVolume: "",
+  })
+  const [inventoryFormData, setInventoryFormData] = useState({
+    amountOfMilk: "",
+    typeOfMilk: "",
+  })
+
+  const handleSavePumpSession = async () => {
+    console.log("pump session form data", sessionFormData)
+    try {
+      const response = await fetch(
+        `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/pump-session`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sessionFormData),
+        },
+      )
+      if (response.ok) {
+        Toast.show({
+          type: "success",
+          text1: "Baby Information Submitted Successfully!",
+          visibilityTime: 3000,
+          autoHide: true,
+          position: "top",
+        })
+        setSessionModalVisible(false)
+      } else {
+        const errorData = await response.json()
+        Toast.show({
+          type: "error",
+          text1: errorData.message || "invalid info. Please try again",
+          position: "top",
+        })
+      }
+    } catch (error) {
+      console.error("Error:", error)
+      Toast.show({ type: "error", text1: "An unexpected error occurred. Pleas try again" })
+    }
+  }
+
+  const handleSaveInventory = async () => {
+    console.log("inventory form data", inventoryFormData)
+    try {
+      const response = await fetch(
+        `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/inventory`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(inventoryFormData),
+        },
+      )
+      if (response.ok) {
+        Toast.show({
+          type: "success",
+          text1: "Baby Information Submitted Successfully!",
+          visibilityTime: 3000,
+          autoHide: true,
+          position: "top",
+        })
+        setInventoryModalVisible(false)
+      } else {
+        const errorData = await response.json()
+        Toast.show({
+          type: "error",
+          text1: errorData.message || "invalid info. Please try again",
+          position: "top",
+        })
+      }
+    } catch (error) {
+      console.error("Error:", error)
+      Toast.show({ type: "error", text1: "An unexpected error occurred. Pleas try again" })
+    }
+  }
+
+  const handleSessionChange = (name: keyof typeof sessionFormData, value: string) => {
+    setSessionFormData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }))
+  }
+  const handInventoryChange = (name: keyof typeof inventoryFormData, value: string) => {
+    setInventoryFormData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }))
+  }
 
   const [sessionModalVisible, setSessionModalVisible] = useState(false)
   const [inventoryModalVisible, setInventoryModalVisible] = useState(false)
@@ -43,7 +139,7 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
           </View>
         </View>
 
-        <View style={$sectionContainer}>
+        {/* <View style={$sectionContainer}>
           <Text style={$sectionTitle}>Inventory</Text>
           <View style={$card}>
             <Text style={$cardTitle}>Stored Milk</Text>
@@ -58,7 +154,7 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
               Update Inventory
             </Button>
           </View>
-        </View>
+        </View> */}
 
         <View style={$sectionContainer}>
           <Text style={$sectionTitle}>Stats</Text>
@@ -88,20 +184,55 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
         <View style={$modalOverlay}>
           <View style={$modalContainer}>
             <Text style={$modalTitle}>Start New Session</Text>
-            <TextInput style={$input} placeholder="Enter session duration (e.g., 3h 24m)" />
-            <TextInput style={$input} placeholder="Enter session volume (e.g., 4 oz)" />
+            <TextInput
+              style={$input}
+              value={sessionFormData.sessionDuration.toString() ?? ""}
+              placeholder="Enter session duration (e.g., 18 minutes)"
+              onChangeText={(value) => {
+                if (/^\d*$/.test(value)) {
+                  // Allow only numbers (including empty string)
+                  setSessionDurationError("") // Clear error if valid
+                  handleSessionChange("sessionDuration", value === "" ? "" : Number(value))
+                } else {
+                  setSessionDurationError("Please enter a valid number")
+                }
+              }}
+            />
+            {sessionDurationError ? (
+              <Text style={{ color: "red" }}>{sessionDurationError}</Text>
+            ) : null}
+            <TextInput
+              style={$input}
+              value={sessionFormData.sessionVolume?.toString()}
+              placeholder="Enter session volume (e.g., 4 oz)"
+              onChangeText={(value) => {
+                if (/^\d*$/.test(value)) {
+                  // Allow only numbers (including empty string)
+                  setSessionVolumeError("") // Clear error if valid
+                  handleSessionChange("sessionVolume", value === "" ? "" : Number(value))
+                } else {
+                  setSessionVolumeError("Please enter a valid number")
+                }
+              }}
+            />
+            {sessionVolumeError ? <Text style={{ color: "red" }}>{sessionVolumeError}</Text> : null}
             <View style={$buttonContainer}>
               <Button
-                style={$button}
+                disabled={!sessionFormData.sessionVolume || !sessionFormData.sessionDuration}
+                style={[$button, (!sessionFormData.sessionVolume || !sessionFormData.sessionDuration) && $disabledButton]}
                 textStyle={$buttonText}
-                onPress={() => setSessionModalVisible(false)}
+                onPress={handleSavePumpSession}
               >
                 Save
               </Button>
               <Button
                 style={$cancelButton}
                 textStyle={$buttonText}
-                onPress={() => setSessionModalVisible(false)}
+                onPress={() => {
+                  setSessionModalVisible(false)
+                  setSessionDurationError("")
+                  setSessionVolumeError("")
+                }}
               >
                 Cancel
               </Button>
@@ -114,20 +245,49 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
         <View style={$modalOverlay}>
           <View style={$modalContainer}>
             <Text style={$modalTitle}>Update Inventory</Text>
-            <TextInput style={$input} placeholder="Enter amount of milk to add (e.g., 4 oz)" />
-            <TextInput style={$input} placeholder="Enter type of milk (e.g., Frozen)" />
+            <TextInput
+              value={inventoryFormData.amountOfMilk?.toString()}
+              onChangeText={(value) => {
+                if (/^\d*$/.test(value)) {
+                  // Allow only numbers (including empty string)
+                  setInventoryAmountError("") // Clear error if valid
+                  handInventoryChange("amountOfMilk", value === "" ? "" : Number(value))
+                } else {
+                  setInventoryAmountError("Please enter a valid number")
+                }
+              }}
+              style={$input}
+              placeholder="Enter amount of milk to add (e.g., 4 oz)"
+            />
+            {inventoryAmountError ? (
+              <Text style={{ color: "red" }}>{inventoryAmountError}</Text>
+            ) : null}
+            {/* <TextInput style={$input} placeholder="Enter type of milk (e.g., Frozen)" />
+             */}
+             <Picker
+              style={$input}
+              selectedValue={inventoryFormData.typeOfMilk}
+              onValueChange={(value) => handInventoryChange("typeOfMilk", value)}
+            >
+              <Picker.Item label="Select Type of Milk" value="" enabled={false} />
+              <Picker.Item label="Frozen" value="frozen" />
+              <Picker.Item label="Liquid" value="liquid" />
+            </Picker>
             <View style={$buttonContainer}>
               <Button
                 style={$button}
                 textStyle={$buttonText}
-                onPress={() => setInventoryModalVisible(false)}
+                onPress={handleSaveInventory}
               >
                 Save
               </Button>
               <Button
                 style={$cancelButton}
                 textStyle={$buttonText}
-                onPress={() => setInventoryModalVisible(false)}
+                onPress={() => {
+                  setInventoryModalVisible(false)
+                  setInventoryAmountError("")
+                }}
               >
                 Cancel
               </Button>
@@ -198,6 +358,10 @@ const $button: ViewStyle = {
   backgroundColor: "#007AFF",
   flex: 1,
   marginHorizontal: 5,
+}
+
+const $disabledButton: ViewStyle = {
+  backgroundColor: "#A0A0A0",
 }
 
 const $cancelButton: ViewStyle = {

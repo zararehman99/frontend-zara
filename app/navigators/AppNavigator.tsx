@@ -10,10 +10,10 @@ import { observer } from "mobx-react-lite"
 import * as Screens from "@/screens"
 import Config from "../config"
 import { useStores } from "../models"
-import { DemoNavigator, DemoTabParamList } from "./DemoNavigator"
+import { DemoTabParamList } from "./DemoNavigator"
 import { navigationRef, useBackButtonHandler } from "./navigationUtilities"
 import { useAppTheme, useThemeProvider } from "@/utils/useAppTheme"
-import React, { ComponentProps } from "react"
+import { ComponentProps } from "react"
 
 /**
  * This type allows TypeScript to know what routes are defined in this navigator
@@ -31,12 +31,19 @@ import React, { ComponentProps } from "react"
 export type AppStackParamList = {
   Welcome: undefined
   Login: undefined
-  Register: undefined 
+  Register: undefined
   Demo: NavigatorScreenParams<DemoTabParamList>
   Chat: undefined
-  Feeds: undefined
-  BabyHealthSleep: undefined
-  Pump: undefined
+  Feeds: { babyId: string }
+  BabyHealthSleep: { babyId: string }
+  Pump: { babyId: string }
+  BabyInfo: { babyId: string }
+  TinyTushTracker: { babyId: string }
+  RegisterBaby: undefined
+  Home: undefined
+  Insights: undefined
+  Inventory: undefined
+  Calendar: undefined
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
 }
@@ -79,6 +86,10 @@ const AppStack = observer(function AppStack() {
         <>
           <Stack.Screen name="Welcome" component={Screens.WelcomeScreen} />
 
+          {/* <Stack.Screen name="Home" component={Screens.HomeScreen} /> */}
+
+          <Stack.Screen name="BabyInfo" component={Screens.BabyInfoScreen} />
+
           <Stack.Screen name="Chat" component={Screens.ChatScreen} />
 
           <Stack.Screen name="Feeds" component={Screens.FeedsScreen} />
@@ -87,7 +98,17 @@ const AppStack = observer(function AppStack() {
 
           <Stack.Screen name="Pump" component={Screens.PumpScreen} />
 
-          <Stack.Screen name="Demo" component={DemoNavigator} />
+          <Stack.Screen name="Insights" component={Screens.InsightsScreen} />
+
+          <Stack.Screen name="RegisterBaby" component={Screens.RegisterBabyScreen} />
+
+          <Stack.Screen name="Inventory" component={Screens.InventoryScreen} />
+
+          <Stack.Screen name="Calendar" component={Screens.CalendarScreen} />
+
+          <Stack.Screen name="TinyTushTracker" component={Screens.TinyTushTrackerScreen} />
+
+          {/* <Stack.Screen name="Demo" component={DemoNavigator} /> */}
         </>
       ) : (
         <>

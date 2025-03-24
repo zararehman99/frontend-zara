@@ -1,26 +1,129 @@
 import { observer } from "mobx-react-lite"
-import { FC, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import { Modal, View, ViewStyle, TextStyle, ScrollView } from "react-native"
 import { Button, Text, Screen, Header } from "@/components"
 import { AppStackScreenProps } from "../navigators"
+import { Picker } from "@react-native-picker/picker"
 
 import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
 
 import { TextInput } from "react-native-gesture-handler"
+import configDev from "@/config/config.dev"
+import Toast from "react-native-toast-message"
+import { useStores } from "@/models"
 
 interface BabyHealthSleepScreenProps extends AppStackScreenProps<"BabyHealthSleep"> {}
 
 export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
   function BabyHealthSleepScreen(_props) {
-    const { navigation } = _props
+    const { navigation, route } = _props
+    const babyId = route.params.babyId
+    const { childStore } = useStores()
     const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
-
+    const [baby, setBaby] = useState(null)
     const [sleepModalVisible, setSleepModalVisible] = useState(false)
     const [entryModalVisible, setEntryModalVisible] = useState(false)
     const [tipsModalVisible, setTipsModalVisible] = useState(false)
+    const [sleepFormData, setSleepFormData] = useState({
+      sleepDuration: "",
+      sleepQuality: "",
+    })
+    const [healthFormData, setHealthFormData] = useState({
+      diaperChange: "",
+      temperature: "",
+    })
+    const [sleepDurationError, setSleepDurationError] = useState("")
+    const [diaperChangeError, setDiaperChangeError] = useState("")
+    const [temperatureError, setTemperatureError] = useState("")
+
+    useEffect(() => {
+      childStore.getChildById(parseInt(babyId))
+      setBaby(childStore.getChildById(parseInt(babyId)))
+    }, [])
+
+    const handleSaveSleepLog = async () => {
+      console.log("sleep form data", sleepFormData)
+      try {
+        const response = await fetch(
+          `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/sleep-log`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sleepFormData),
+          },
+        )
+        if (response.ok) {
+          Toast.show({
+            type: "success",
+            text1: "Baby Information Submitted Successfully!",
+            visibilityTime: 3000,
+            autoHide: true,
+            position: "top",
+          })
+          setSleepModalVisible(false)
+        } else {
+          const errorData = await response.json()
+          Toast.show({
+            type: "error",
+            text1: errorData.message || "invalid info. Please try again",
+            position: "top",
+          })
+        }
+      } catch (error) {
+        console.error("Error:", error)
+        Toast.show({ type: "error", text1: "An unexpected error occurred. Pleas try again" })
+      }
+    }
+    const handleSaveHealthLog = async () => {
+      console.log("sleep form data", healthFormData)
+      try {
+        const response = await fetch(
+          `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/health-log`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(healthFormData),
+          },
+        )
+        if (response.ok) {
+          Toast.show({
+            type: "success",
+            text1: "Baby Information Submitted Successfully!",
+            visibilityTime: 3000,
+            autoHide: true,
+            position: "top",
+          })
+          setEntryModalVisible(false)
+        } else {
+          const errorData = await response.json()
+          Toast.show({
+            type: "error",
+            text1: errorData.message || "invalid info. Please try again",
+            position: "top",
+          })
+        }
+      } catch (error) {
+        console.error("Error:", error)
+        Toast.show({ type: "error", text1: "An unexpected error occurred. Pleas try again" })
+      }
+    }
 
     function goBack() {
       navigation.goBack()
+    }
+
+    const handleChange = (name: keyof typeof sleepFormData, value: string) => {
+      setSleepFormData((prevState) => ({
+        ...prevState,
+        [name]: value,
+      }))
+    }
+
+    const handleHealthChange = (name: keyof typeof healthFormData, value: string) => {
+      setHealthFormData((prevState) => ({
+        ...prevState,
+        [name]: value,
+      }))
     }
 
     return (
@@ -48,7 +151,7 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
             <Text style={$sectionTitle}>Health Journal</Text>
             <View style={$card}>
               <Text style={$cardTitle}>Recent Notes</Text>
-              <Text style={$cardText}>• Diaper change: 5 today</Text>
+              <Text style={$cardText}>• Nappy change: 5 today</Text>
               <Text style={$cardText}>• Temperature: 98.6°F (Normal)</Text>
               <Button
                 style={$trackerButton}
@@ -88,15 +191,45 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
           <View style={$modalOverlay}>
             <View style={$modalContainer}>
               <Text style={$modalTitle}>Record Sleep</Text>
-              <TextInput style={$input} placeholder="Enter duration (e.g., 3h 24m)" />
-              <TextInput style={$input} placeholder="Enter sleep quality (e.g., Good)" />
+              <TextInput
+                style={$input}
+                value={sleepFormData.sleepDuration?.toString()}
+                placeholder="Enter duration (e.g., 3h 24m)"
+                onChangeText={(value) => {
+                  if (/^\d*$/.test(value)) {
+                    // Only allow digits and h, m, s
+                    setSleepDurationError("") // Clear error if valid
+                    handleChange("sleepDuration", value === "" ? "" : value)
+                  } else {
+                    setSleepDurationError("Please enter a valid duration")
+                  }
+                }}
+              />
+              {sleepDurationError ? (
+                <Text style={{ color: "red" }}>{sleepDurationError}</Text>
+              ) : null}
+              <Picker
+                style={$input}
+                selectedValue={sleepFormData.sleepQuality}
+                onValueChange={(value) => handleChange("sleepQuality", value)}
+              >
+                <Picker.Item label="Select Sleep Quality" value="" enabled={false} />
+                <Picker.Item label="Best" value="best" />
+                <Picker.Item label="Good" value="good" />
+                <Picker.Item label="Bad" value="bad" />
+              </Picker>
+              {/* <TextInput style={$input} placeholder="Enter sleep quality (e.g., Good)" /> */}
               <View style={$buttonContainer}>
                 <Button
-                  style={$button}
-                  textStyle={$buttonText}
-                  onPress={() => setSleepModalVisible(false)}
+                  disabled={!sleepFormData.sleepDuration || !sleepFormData.sleepQuality}
+                  style={[
+                    $button,
+                    (!sleepFormData.sleepDuration || !sleepFormData.sleepQuality) &&
+                      $disabledButton,
+                  ]}
+                  onPress={handleSaveSleepLog}
                 >
-                  Save
+                  <Text style={$buttonText}> Save </Text>
                 </Button>
                 <Button
                   style={$cancelButton}
@@ -114,15 +247,47 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
           <View style={$modalOverlay}>
             <View style={$modalContainer}>
               <Text style={$modalTitle}>Add Health Entry</Text>
-              <TextInput style={$input} placeholder="Diaper changes today" />
-              <TextInput style={$input} placeholder="Current temperature (°F)" />
+              <TextInput
+                value={healthFormData.diaperChange?.toString()}
+                onChangeText={(value) => {
+                  if (/^\d*$/.test(value)) {
+                    // Only allow digits
+                    setDiaperChangeError("") // Clear error if valid
+                    handleHealthChange("diaperChange", value === "" ? "" : Number(value))
+                  } else {
+                    setDiaperChangeError("Please enter a valid number")
+                  }
+                }}
+                style={$input}
+                placeholder="Diaper changes today"
+              />
+              {diaperChangeError ? <Text style={{ color: "red" }}>{diaperChangeError}</Text> : null}
+              <TextInput
+                value={healthFormData.temperature?.toString()}
+                onChangeText={(value) => {
+                  if (/^\d*$/.test(value)) {
+                    // Only allow digits
+                    setTemperatureError("") // Clear error if valid
+                    handleHealthChange("temperature", value === "" ? "" : Number(value))
+                  } else {
+                    setTemperatureError("Please enter a valid number")
+                  }
+                }}
+                style={$input}
+                placeholder="Current temperature (°F)"
+              />
+              {temperatureError ? <Text style={{ color: "red" }}>{temperatureError}</Text> : null}
               <View style={$buttonContainer}>
                 <Button
-                  style={$button}
-                  textStyle={$buttonText}
-                  onPress={() => setEntryModalVisible(false)}
+                  disabled={!healthFormData.diaperChange || !healthFormData.temperature}
+                  style={[
+                    $button,
+                    (!healthFormData.diaperChange || !healthFormData.temperature) &&
+                      $disabledButton,
+                  ]}
+                  onPress={handleSaveHealthLog}
                 >
-                  Save
+                  <Text style={$buttonText}>Save</Text>
                 </Button>
                 <Button
                   style={$cancelButton}
@@ -202,6 +367,10 @@ const $button: ViewStyle = {
   backgroundColor: "#007AFF",
   flex: 1,
   marginHorizontal: 5,
+}
+
+const $disabledButton: ViewStyle = {
+  backgroundColor: "#A0A0A0",
 }
 
 const $cancelButton: ViewStyle = {

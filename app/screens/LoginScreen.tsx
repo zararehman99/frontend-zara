@@ -1,11 +1,14 @@
 import { observer } from "mobx-react-lite"
+import Toast from "react-native-toast-message"
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
-import { TextInput, ImageBackground,  TextStyle, ViewStyle } from "react-native"
+import { TextInput, ImageBackground, TextStyle, ViewStyle, TouchableOpacity } from "react-native"
 import { Button, Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "../components"
 import { useStores } from "../models"
 import { AppStackScreenProps } from "../navigators"
 import { $styles, type ThemedStyle } from "@/theme"
 import { useAppTheme } from "@/utils/useAppTheme"
+import { ActivityIndicator } from "react-native"
+import configDev from "@/config/config.dev"
 
 const loginFace = require("../../assets/images/loginFace.jpg") // Background image
 
@@ -21,7 +24,14 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [attemptsCount, setAttemptsCount] = useState(0)
   const {
-    authenticationStore: { authEmail, setAuthEmail, setAuthToken, validationError },
+    authenticationStore: {
+      authEmail,
+      setAuthEmail,
+      setAuthToken,
+      setUserId,
+      setUserName,
+      validationError,
+    },
   } = useStores()
 
   const {
@@ -32,8 +42,8 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
   useEffect(() => {
     // Here is where you could fetch credentials from keychain or storage
     // and pre-fill the form fields.
-    setAuthEmail("latch@example.com")
-    setAuthPassword("latch12345")
+    setAuthEmail("test1@gmail.com")
+    setAuthPassword("khalid")
 
     // Return a "cleanup" function that React will run when the component unmounts
     return () => {
@@ -44,21 +54,81 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
 
   const error = isSubmitted ? validationError : ""
 
-  function login() {
+  const isLoginDisabled = !authEmail.trim() || !authPassword.trim()
+
+  async function login() {
+    if (isSubmitted) return
     setIsSubmitted(true)
     setAttemptsCount(attemptsCount + 1)
 
-    if (validationError) return
+    if (validationError) {
+      setIsSubmitted(false)
+      Toast.show({
+        type: "error",
+        text1: "Invalid Credentials",
+        text2: "Please check your inputs",
+      })
+      return
+    }
 
-    // Make a request to your server to get an authentication token.
-    // If successful, reset the fields and set the token.
-    setIsSubmitted(false)
-    setAuthPassword("")
-    setAuthEmail("")
+    try {
+      const response = await fetch(`${configDev.VITE_LATCH_BACKEND_URL}/api/users/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: authEmail,
+          password: authPassword,
+        }),
+      })
 
-    // We'll mock this with a fake token.
-    setAuthToken(String(Date.now()))
+      if (!response.ok) {
+        throw new Error("Something went wrong")
+      }
+
+      const data = await response.json()
+      console.log("Data.User", data.user)
+      if (data.user) {
+        const userID = data.user.id
+        console.log("User ID", userID)
+        setUserId(userID.toString())
+        setUserName(data.user.firstName)
+      }
+      if (data.token) {
+        setAuthToken(data.token)
+        setAuthEmail("")
+        setAuthPassword("")
+        console.log("Login Successful")
+        Toast.show({
+          type: "success",
+          text1: "Login Successful",
+          text2: "You are now logged in",
+        })
+      } else {
+        throw new Error("No token received")
+      }
+    } catch (error) {
+      console.error("Login error:", error.message)
+      Toast.show({
+        type: "error",
+        text1: "Login Error",
+        text2: error.message || "Something went wrong",
+      })
+    } finally {
+      setIsSubmitted(false)
+    }
   }
+
+  //   // Make a request to your server to get an authentication token.
+  //   // If successful, reset the fields and set the token.
+  //   setIsSubmitted(false)
+  //   setAuthPassword("")
+  //   setAuthEmail("")
+
+  //   // We'll mock this with a fake token.
+  //   setAuthToken(String(Date.now()))
+  // }
 
   function register() {
     navigation.navigate("Register")
@@ -81,14 +151,11 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
   )
 
   return (
-    
-      <Screen preset="fixed" contentContainerStyle={$styles.flex1}>
-
-
+    <Screen preset="fixed" contentContainerStyle={$container}>
       <ImageBackground source={loginFace} style={$backgroundImage} resizeMode="cover">
-      <ImageBackground source={loginLogo} style={$logo} resizeMode="cover">
-        
+        {" "}
       </ImageBackground>
+      {/* <ImageBackground source={loginLogo} style={$logo} resizeMode="cover"></ImageBackground> */}
 
       <Text
         testID="login-heading"
@@ -105,7 +172,7 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
       <TextField
         value={authEmail}
         onChangeText={setAuthEmail}
-        containerStyle={themed($textField)}
+        containerStyle={$input}
         autoCapitalize="none"
         autoComplete="email"
         autoCorrect={false}
@@ -121,7 +188,7 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
         ref={authPasswordInput}
         value={authPassword}
         onChangeText={setAuthPassword}
-        containerStyle={themed($textField)}
+        containerStyle={$input}
         autoCapitalize="none"
         autoComplete="password"
         autoCorrect={false}
@@ -132,56 +199,62 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
         RightAccessory={PasswordRightAccessory}
       />
 
-      <Button
-        testID="login-button"
-        tx="loginScreen:tapToLogIn"
-        style={themed($tapButton)}
-        preset="reversed"
+      <TouchableOpacity
+        style={[
+          $button,
+          { justifyContent: "center" },
+          isLoginDisabled && { backgroundColor: "#A5A5A5" },
+        ]}
+        disabled={isLoginDisabled}
         onPress={login}
-      />
+      >
+        
+        {isSubmitted ? (
+          <>
+            <Text style={$buttonText}>Loading</Text>
+            <ActivityIndicator style={{ marginLeft: 10 }} size="small" color="#FFFFFF" />
+          </>
+        ) : (
+          <Text style={$buttonText}>Tap to Log In</Text>
+        )}
+      </TouchableOpacity>
 
-      <Button
-        testID="login-button"
-        tx="loginScreen:createANewAccount"
-        style={themed($tapButton)}
-        preset="reversed"
-        onPress={register}
-      />
-  </ImageBackground>
-
-
+      <TouchableOpacity style={$accountButton} onPress={register}>
+        <Text style={$buttonText}>Create an Account</Text>
+      </TouchableOpacity>
     </Screen>
   )
 })
-
 
 const $backgroundImage: ViewStyle = {
   flex: 1,
   width: "100%",
   height: "100%",
   position: "absolute",
-  margin:0,
-  padding: 10, 
-
+  margin: 0,
+  padding: 10,
 }
 
+const $focusedInput: ViewStyle = {
+  borderWidth: 2,
+  borderColor: "#16A34A", // Green color when focused
+  shadowColor: "#16A34A",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 5,
+  elevation: 5,
+}
 
-      const $logo: ViewStyle = {
-        width: "50%",
-        height: "22%",
-        position: "relative",
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        margin:0,
-        padding: 10, 
-      }
-
-
-const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingVertical: spacing.xxl,
-  paddingHorizontal: spacing.lg,
-})
+const $logo: ViewStyle = {
+  width: "50%",
+  height: "22%",
+  position: "relative",
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  margin: 0,
+  padding: 10,
+}
 
 const $logIn: ThemedStyle<TextStyle> = ({ spacing }) => ({
   textAlign: "center",
@@ -200,3 +273,49 @@ const $textField: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 const $tapButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginTop: spacing.xs,
 })
+
+const $input: ViewStyle = {
+  width: "80%",
+  height: 50,
+  marginBottom: 15,
+  fontSize: 16,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 5,
+  elevation: 3,
+  zIndex: 1,
+}
+
+const $container: ViewStyle = {
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#f3e5f5",
+  flex: 1,
+  gap: 20,
+}
+
+const $button: ViewStyle = {
+  marginTop: 30,
+  width: "80%",
+  backgroundColor: "#16A34A",
+  padding: 15,
+  borderRadius: 8,
+  flexDirection: "row",
+  alignItems: "center",
+  position: "relative",
+}
+
+const $buttonText: TextStyle = {
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "bold",
+}
+
+const $accountButton: ViewStyle = {
+  width: "80%",
+  backgroundColor: "#3B82F6",
+  padding: 15,
+  borderRadius: 8,
+  alignItems: "center",
+  position: "relative",
+}

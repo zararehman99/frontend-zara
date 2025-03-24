@@ -1,29 +1,82 @@
 import { observer } from "mobx-react-lite"
-import { FC, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import { Image, Modal, ImageStyle, TextStyle, View, ViewStyle } from "react-native"
 import { Button, Header, Screen, Text } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { TextInput } from "react-native-gesture-handler"
+import configDev from "@/config/config.dev"
+import Toast from "react-native-toast-message"
+import { useStores } from "@/models"
+import { Picker } from "@react-native-picker/picker"
+import { format } from "date-fns"
 
 const babyImage = require("../../assets/images/baby_profile.jpg") // Replace with your actual baby image path
 
 interface FeedsScreenProps extends AppStackScreenProps<"Feeds"> {}
 
 export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_props) {
-  const { navigation } = _props
-
+  const { navigation, route } = _props
+  const babyId = route.params.babyId
+  const {
+      childStore,
+    } = useStores()
+  const [baby, setBaby] = useState(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
-  const [feedType, setFeedType] = useState("")
-  const [amount, setAmount] = useState("")
-  const [duration, setDuration] = useState("")
+  const [amountError, setAmountError] = useState("")
+  const [durationError, setDurationError] = useState("")
+  const [formData, setFormData] = useState({
+    feedType: "",
+    amount: "",
+    duration: "",
+  })
+
+  useEffect(() => {
+    childStore.getChildById(parseInt(babyId))
+    setBaby(childStore.getChildById(parseInt(babyId)))
+  },[])
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible)
   }
 
-  const handleSaveFeed = () => {
-    console.log({ feedType, amount, duration })
-    toggleModal()
+  const handleSaveFeed = async () => {
+    console.log("formData", formData)
+    try {
+      const response = await fetch(
+        `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/feed`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        },
+      )
+      if (response.ok) {
+        Toast.show({
+          type: "success",
+          text1: "Baby Information Submitted Successfully!",
+          visibilityTime: 3000,
+          autoHide: true,
+          position: "top",
+        })
+        toggleModal()
+      } else {
+        const errorData = await response.json()
+        Toast.show({
+          type: "error",
+          text1: errorData.message || "invalid info. Please try again",
+          position: "top",
+        })
+      }
+    } catch (error) {
+      console.error("Error:", error)
+      Toast.show({ type: "error", text1: "An unexpected error occurred. Pleas try again" })
+    }
+  }
+  const handleChange = (name: keyof typeof formData, value: string) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }))
   }
 
   return (
@@ -34,16 +87,18 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
         <Image source={babyImage} style={$profileImage} resizeMode="cover" />
 
         <View style={$profileInfo}>
-          <Text style={$nameText}>Baby Noah</Text>
+          <Text style={$nameText}>Baby {baby?.name}</Text>
           <Text style={$ageText}>6 months old</Text>
 
           <View style={$statsContainer}>
             <View style={$statItem}>
-              <Text style={$statValue}>8</Text>
+              <Text style={$statValue}>{baby?.feeds.length}</Text>
               <Text style={$statLabel}>Feeds Today</Text>
             </View>
             <View style={$statItem}>
-              <Text style={$statValue}>24 oz</Text>
+              <Text style={$statValue}>{(
+                baby?.feeds.reduce((sum, f) => sum + f.quantityMl, 0) / 29.57
+              ).toFixed(2)} oz</Text>
               <Text style={$statLabel}>Today&apos;s Intake</Text>
             </View>
             <View style={$statItem}>
@@ -56,73 +111,97 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
 
       {/* Rest of the component remains the same */}
       <View style={$feedHistoryContainer}>
-        <Text style={$sectionTitle}>Recent Feeds</Text>
+      <Text style={$sectionTitle}>Recent Feeds</Text>
 
-        <View style={$feedItem}>
-          <View style={$feedTimeContainer}>
-            <Text style={$feedTime}>8:30 AM</Text>
-            <Text style={$feedDate}>Today</Text>
-          </View>
-          <View style={$feedDetailsContainer}>
-            <Text style={$feedType}>Breast Feed</Text>
-            <Text style={$feedDuration}>18 minutes</Text>
-          </View>
-        </View>
+      {baby?.feeds.map((feed) => {
+        const localTime = new Date(feed.feedTime)
+        const timeStr = format(localTime, "hh:mm a")
+        const dateStr = format(localTime, "MMMM d, yyyy")
 
-        <View style={$feedItem}>
-          <View style={$feedTimeContainer}>
-            <Text style={$feedTime}>5:45 AM</Text>
-            <Text style={$feedDate}>Today</Text>
+        return (
+          <View key={feed.id} style={$feedItem}>
+            <View style={$feedTimeContainer}>
+              <Text style={$feedTime}>{timeStr}</Text>
+              <Text style={$feedDate}>{dateStr}</Text>
+            </View>
+            <View style={$feedDetailsContainer}>
+              <Text style={$feedType}>
+                {feed.feedType === "breastfeeding" ? "Breast Feed" : "Bottle Feed"}
+              </Text>
+              <Text style={$feedDuration}>{feed.durationMins} minutes</Text>
+              <Text style={$feedAmount}>
+                {(feed.quantityMl / 29.57).toFixed(2)} oz
+              </Text>
+            </View>
           </View>
-          <View style={$feedDetailsContainer}>
-            <Text style={$feedType}>Bottle Feed</Text>
-            <Text style={$feedAmount}>4 oz formula</Text>
-          </View>
-        </View>
-
-        <View style={$feedItem}>
-          <View style={$feedTimeContainer}>
-            <Text style={$feedTime}>11:30 PM</Text>
-            <Text style={$feedDate}>Yesterday</Text>
-          </View>
-          <View style={$feedDetailsContainer}>
-            <Text style={$feedType}>Breast Feed</Text>
-            <Text style={$feedDuration}>15 minutes</Text>
-          </View>
-        </View>
-      </View>
+        )
+      })}
+    </View>
 
       <Button style={$addFeedButton} onPress={toggleModal}>
-        Add New Feed
+        <Text style={$buttonText}>Add New Feed</Text>
       </Button>
 
       <Modal visible={isModalVisible} animationType="slide" transparent={true}>
         <View style={$modalOverlay}>
           <View style={$modalCotainer}>
             <Text style={$modalTitle}>Add New Feed</Text>
-            <TextInput
+            {/* <TextInput
               style={$input}
-              value={feedType}
-              onChangeText={setFeedType}
+              value={formData.feedType}
+              onChangeText={(value) => handleChange("feedType", value)}
               placeholder="Feed Type (Breast/Bottle)"
-            />
+            /> */}
+            <Picker
+              selectedValue={formData.feedType}
+              onValueChange={(value) => handleChange("feedType", value)}
+              style={$input}
+            >
+              <Picker.Item label="Breastfeeding" value="breastfeeding" />
+              <Picker.Item label="Bottle" value="bottle" />
+            </Picker>
             <TextInput
               style={$input}
-              value={amount}
-              onChangeText={setAmount}
+              value={formData.amount?.toString()}
+              onChangeText={(value) => {
+                if (/^\d*$/.test(value)) {
+                  // Only allow digits
+                  setAmountError("") // Clear error if valid
+                  handleChange("amount", value === "" ? "" : Number(value))
+                } else {
+                  setAmountError("Please enter a valid number")
+                }
+              }}
               placeholder="Amount (oz)"
               keyboardType="numeric"
             />
+            {amountError ? <Text style={{ color: "red" }}>{amountError}</Text> : null}
             <TextInput
               style={$input}
-              value={duration}
-              onChangeText={setDuration}
+              value={formData.duration?.toString()}
+              onChangeText={(value) => {
+                if (/^\d*$/.test(value)) {
+                  // Only allow digits
+                  setDurationError("") // Clear error if valid
+                  handleChange("duration", value === "" ? "" : Number(value))
+                } else {
+                  setDurationError("Please enter a valid number")
+                }
+              }}
               placeholder="Duration (mins)"
               keyboardType="numeric"
             />
+            {durationError ? <Text style={{ color: "red" }}>{durationError}</Text> : null}
             <View style={$buttonContainer}>
-              <Button style={$button} onPress={handleSaveFeed}>
-                Save Feed
+              <Button
+                disabled={!formData.feedType || !formData.amount || !formData.duration}
+                style={[
+                  $button,
+                  (!formData.feedType || !formData.amount || !formData.duration) && $disabledButton,
+                ]}
+                onPress={handleSaveFeed}
+              >
+                <Text style={$buttonText}>Save Feed</Text>
               </Button>
               <Button style={$cancelButton} onPress={toggleModal}>
                 Cancel
@@ -175,6 +254,11 @@ const $buttonContainer: ViewStyle = {
 const $button: ViewStyle = {
   flex: 1,
   marginRight: 5,
+  backgroundColor: "#3B82F6",
+}
+
+const $disabledButton: ViewStyle = {
+  backgroundColor: "#A0A0A0",
 }
 
 const $cancelButton: ViewStyle = {
@@ -319,7 +403,13 @@ const $feedAmount: TextStyle = {
 const $addFeedButton: ViewStyle = {
   marginTop: 24,
   marginBottom: 16,
-  backgroundColor: "#4CD964", // Green color for add action
+  backgroundColor: "#10B981", // Green color for add action
   borderRadius: 10,
   height: 50,
+}
+
+const $buttonText: TextStyle = {
+  color: "#FFFFFF", // Set text color for button text (white)
+  fontSize: 16, // Set font size (optional)
+  fontWeight: "bold", // Set font weight (optional)
 }

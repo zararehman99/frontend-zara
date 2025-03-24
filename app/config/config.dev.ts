@@ -7,5 +7,5 @@
  */
 export default {
   API_URL: "https://api.rss2json.com/v1/",
-  VITE_LATCH_BACKEND_URL: "http://localhost:4000",
+  VITE_LATCH_BACKEND_URL: "https://back-end-lkeh.onrender.com",
 }

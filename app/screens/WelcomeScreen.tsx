@@ -1,138 +1,190 @@
-import { observer } from "mobx-react-lite" 
-import { FC } from "react"
-import { Image, ImageBackground, TextStyle, View, ViewStyle } from "react-native"
-import { Button, Text, Screen } from "@/components"
-import { useStores } from "../models"
+import { observer } from "mobx-react-lite"
+import { FC, useEffect } from "react"
+import { View, Text, ActivityIndicator, TouchableOpacity, TextStyle, ViewStyle } from "react-native"
+import { Screen } from "@/components"
 import { AppStackScreenProps } from "../navigators"
-import { $styles, type ThemedStyle } from "@/theme"
-import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
-import { useAppTheme } from "@/utils/useAppTheme"
-
-
-const welcomeFace = require("../../assets/images/welcomeImage.jpg") // Background image
-
-const latchLogo = require("../../assets/images/latchLogo.png") // latch logo
+import { useStores } from "@/models"
+import BabyProfileCard from "@/components/BabyCard"
+import { Shadow } from "react-native-shadow-2"
 
 interface WelcomeScreenProps extends AppStackScreenProps<"Welcome"> {}
 
-export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeScreen(_props) {
-  const { themed, theme } = useAppTheme()
-  const { navigation } = _props
-  const { authenticationStore: { logout } } = useStores()
+export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeScreen({
+  navigation,
+}) {
+  const {
+    authenticationStore: { userId, userName, logout },
+    childStore,
+  } = useStores()
 
-  function goNext() {
-    navigation.navigate("Chat")
-  }
-
-  function goToFeeds() {
-    navigation.navigate("Feeds")
-  }
-
-  function goToBabyHealthSleep() {
-    navigation.navigate("BabyHealthSleep")
-  }
-
-  function goToPump() {
-    navigation.navigate("Pump")
-  }
-
-  const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
-  const $topContainerInsets = useSafeAreaInsetsStyle(["top"])
+  useEffect(() => {
+    childStore.fetchChildren(userId)
+  }, [])
 
   return (
-    <Screen preset="fixed" contentContainerStyle={$styles.flex1}>
-      <ImageBackground source={welcomeFace} style={$backgroundImage} resizeMode="cover">
-        <ImageBackground source={latchLogo} style={$logo} resizeMode="center"> 
+    <Screen preset="fixed" contentContainerStyle={$container}>
+      <View style={$topSection}>
+        <Text style={$welcomeHeading}>Welcome,</Text>
+        <Text style={$userName}>{userName}!</Text>
 
-        </ImageBackground>
-        {/* Logout button at top right */}
-        <View style={[$logoutButtonContainer, $topContainerInsets]}>
-          <Button style={$logoutButton} onPress={logout}>
-            Logout
-          </Button>
-        </View>
-        
-        <View style={$buttonContainer}>
-          <Button style={$button} textStyle={$buttonText} onPress={goToFeeds}>Feeds</Button>
-          <Button style={$button} textStyle={$buttonText} onPress={goToBabyHealthSleep}>Baby Health & Sleep</Button>
-          <Button style={$button} textStyle={$buttonText} onPress={goToPump}>Pump</Button>
-          <Button style={$aiButton} onPress={goNext}>
-            AI Assistant
-          </Button>
-        </View>
+        <TouchableOpacity style={$logoutButton} onPress={logout}>
+          <Text style={$logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
 
-      </ImageBackground>
+      <View style={$contentSection}>
+        {childStore.loading ? (
+          <ActivityIndicator size="large" color="#6366F1" style={{ marginVertical: 30 }} />
+        ) : (
+          <View style={$babyListContainer}>
+            {childStore.childrenForList.length > 0 ? (
+              childStore.childrenForList.map((b) => <BabyProfileCard key={b.id} baby={b} />)
+            ) : (
+              <Text style={$emptyStateText}>
+                No baby profiles found. Get started by adding a new baby!
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+
+      <View style={$actionsSection}>
+        <Shadow distance={5} startColor="rgba(99, 102, 241, 0.15)" style={$buttonShadow}>
+          <TouchableOpacity
+            style={$addBabyButton}
+            onPress={() => navigation.navigate("RegisterBaby")}
+          >
+            <Text style={$buttonText}>Add New Baby</Text>
+          </TouchableOpacity>
+        </Shadow>
+
+        <Shadow distance={5} startColor="rgba(139, 92, 246, 0.15)" style={$buttonShadow}>
+          <TouchableOpacity style={$inventory} onPress={() => navigation.navigate("Inventory")}>
+            <Text style={$buttonText}>Manage Inventory</Text>
+          </TouchableOpacity>
+        </Shadow>
+
+        {/* <Shadow distance={5} startColor="rgba(139, 92, 246, 0.15)" style={$buttonShadow}>
+          <TouchableOpacity style={$inventory} onPress={() => navigation.navigate("Calendar")}>
+            <Text style={$buttonText}>Manage Calendar</Text>
+          </TouchableOpacity>
+        </Shadow> */}
+
+        <Shadow distance={5} startColor="rgba(139, 92, 246, 0.15)" style={$buttonShadow}>
+          <TouchableOpacity style={$insightsButton} onPress={() => navigation.navigate("Insights")}>
+            <Text style={$buttonText}>View Insights</Text>
+          </TouchableOpacity>
+        </Shadow>
+
+        <Shadow distance={5} startColor="rgba(59, 130, 246, 0.15)" style={$buttonShadow}>
+          <TouchableOpacity style={$aiButton} onPress={() => navigation.navigate("Chat")}>
+            <Text style={$buttonText}>AI Assistant</Text>
+          </TouchableOpacity>
+        </Shadow>
+      </View>
     </Screen>
   )
 })
 
-
-
-
-
-const $logo: ViewStyle = {
-  width: "50%",
-  height: "22%",
-  position: "relative",
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-  margin:0,
-  padding: 20, 
-}
-
-
-const $backgroundImage: ViewStyle = {
+const $container: ViewStyle = {
   flex: 1,
-  width: "100%",
-  height: "100%",
-  position: "absolute",
+  backgroundColor: "#f1f5f9",
+  paddingHorizontal: 24,
 }
 
-const $buttonContainer: ViewStyle = {
-  flex: 1,
-  justifyContent: "center", // Center vertically
-  alignItems: "center", // Center horizontally
-  gap: 20,
+const $topSection: ViewStyle = {
+  paddingTop: 60,
+  paddingBottom: 24,
 }
 
-const $aiButton: ViewStyle = {
-  backgroundColor: "#007AFF",
-  marginBottom: 20,
-  width: 200, // Optional: Set fixed width for AI button
-  height: 50, // Optional: Set fixed height for AI button
+const $welcomeHeading: TextStyle = {
+  fontSize: 22,
+  fontWeight: "500",
+  color: "#64748B",
 }
 
-const $logoutButtonContainer: ViewStyle = {
-  position: "absolute",
-  top: 10,
-  right: 10,
-  zIndex: 10,
-}
-
-const $button: ViewStyle = {
-  width: 200, // Fixed width
-  height: 50, // Fixed height
-  backgroundColor: "#101519", // Nice blue color
-  justifyContent: "center",
-  alignItems: "center",
-  borderRadius: 10,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-  elevation: 5, // Shadow for Android
-}
-
-const $buttonText: TextStyle = {
-  color: "#FFFFFF", // Set text color for button text (white)
-  fontSize: 16, // Set font size (optional)
-  fontWeight: "bold", // Set font weight (optional)
+const $userName: TextStyle = {
+  fontSize: 32,
+  fontWeight: "bold",
+  color: "#1E293B",
+  marginTop: 4,
 }
 
 const $logoutButton: ViewStyle = {
-  backgroundColor: "#FF3B30", // Red color for logout
-  width: 100, // Making it smaller than the other buttons
-  height: 40,
-  borderRadius: 8,
+  position: "absolute",
+  top: 60,
+  right: 0,
+  paddingVertical: 8,
+  paddingHorizontal: 16,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: "#EF4444",
+}
+
+const $logoutText: TextStyle = {
+  fontSize: 14,
+  fontWeight: "600",
+  color: "#EF4444",
+}
+
+const $contentSection: ViewStyle = {
+  flex: 1,
+  paddingVertical: 12,
+}
+
+const $babyListContainer: ViewStyle = {
+  flex: 1,
+  gap: 16,
+}
+
+const $emptyStateText: TextStyle = {
+  fontSize: 16,
+  color: "#64748B",
+  textAlign: "center",
+  marginTop: 40,
+  lineHeight: 24,
+}
+
+const $actionsSection: ViewStyle = {
+  paddingVertical: 24,
+  gap: 16,
+}
+
+const $buttonShadow: ViewStyle = {
+  width: "100%",
+  borderRadius: 16,
+}
+
+const $addBabyButton: ViewStyle = {
+  backgroundColor: "#10B981",
+  paddingVertical: 16,
+  borderRadius: 16,
+  alignItems: "center",
+}
+
+const $inventory: ViewStyle = {
+  backgroundColor: "#10B981",
+  paddingVertical: 16,
+  borderRadius: 16,
+  alignItems: "center",
+}
+
+const $insightsButton: ViewStyle = {
+  backgroundColor: "#8B5CF6",
+  paddingVertical: 16,
+  borderRadius: 16,
+  alignItems: "center",
+}
+
+const $aiButton: ViewStyle = {
+  backgroundColor: "#3B82F6",
+  paddingVertical: 16,
+  borderRadius: 16,
+  alignItems: "center",
+}
+
+const $buttonText: TextStyle = {
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "600",
 }
