@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite"
 import { FC, useEffect, useRef, useState } from "react"
-import { TextInput, TextStyle, ViewStyle } from "react-native"
+import { TextInput, TextStyle, TouchableOpacity, ViewStyle } from "react-native"
 import { Button, Screen, Text, TextField } from "@/components"
 import { useStores } from "@/models"
 import { useAppTheme } from "@/utils/useAppTheme"
@@ -14,8 +14,9 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
     const authPasswordInput = useRef<TextInput>(null)
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
+      firstName: "",
+      lastName: "",
       email: "",
-      fullName: "",
       password: "",
       confirmPassword: "",
     })
@@ -29,7 +30,7 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
 
     useEffect(() => {
       return () => {
-        setFormData({ email: "", fullName: "", password: "", confirmPassword: "" })
+        setFormData({ firstName: "", lastName: "", email: "", password: "", confirmPassword: "" })
       }
     }, [])
 
@@ -42,6 +43,7 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
 
     const handleSubmit = async () => {
       setLoading(true)
+      console.log("formData", formData)
       try {
         const response = await fetch(`${configDev.VITE_LATCH_BACKEND_URL}/api/users/register`, {
           method: "POST",
@@ -71,11 +73,11 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
     }
 
     return (
-      <Screen preset="auto" contentContainerStyle={themed($screenContentContainer)}>
+      <Screen preset="auto" contentContainerStyle={$container}>
         <TextField
           value={formData.email}
           onChangeText={(value) => handleChange("email", value)}
-          containerStyle={themed($textField)}
+          containerStyle={$input}
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
@@ -83,18 +85,25 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
         />
 
         <TextField
-          value={formData.fullName}
-          onChangeText={(value) => handleChange("fullName", value)}
-          containerStyle={themed($textField)}
+          value={formData.firstName}
+          onChangeText={(value) => handleChange("firstName", value)}
+          containerStyle={$input}
           autoCapitalize="words"
-          placeholderTx="registerScreen:fullNameFieldPlaceholder"
+          placeholderTx="registerScreen:firstNameFieldPlaceholder"
         />
 
+        <TextField
+          value={formData.lastName}
+          onChangeText={(value) => handleChange("lastName", value)}
+          containerStyle={$input}
+          autoCapitalize="words"
+          placeholderTx="registerScreen:lastNameFieldPlaceholder"
+        />
         <TextField
           ref={authPasswordInput}
           value={formData.password}
           onChangeText={(value) => handleChange("password", value)}
-          containerStyle={themed($textField)}
+          containerStyle={$input}
           secureTextEntry
           autoCapitalize="none"
           autoComplete="password"
@@ -104,45 +113,114 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
         <TextField
           value={formData.confirmPassword}
           onChangeText={(value) => handleChange("confirmPassword", value)}
-          containerStyle={themed($textField)}
+          containerStyle={$input}
           secureTextEntry
           autoCapitalize="none"
           placeholderTx="registerScreen:confirmPasswordFieldPlaceholder"
         />
 
-        <Text tx="registerScreen:conditions" style={themed($hint)} />
+        <Text tx="registerScreen:conditions" style={$hint} />
 
-        <Button
+        {/* <Button
           tx="registerScreen:tapToRegister"
-          style={themed($tapButton)}
+          style={$tapButton}
           onPress={handleSubmit}
           disabled={loading}
-        />
+        /> */}
 
-        <Button
+        <TouchableOpacity style={$tapButton} onPress={handleSubmit} disabled={loading}>
+          <Text style={$buttonText}>Register</Text>
+        </TouchableOpacity>
+
+        {/* <Button
           tx="registerScreen:goToLogin"
-          style={themed($tapButton)}
-          onPress={() => navigation.navigate("Login")}
-        />
+          style={$accountButton}
+          onPress={}
+        /> */}
+        <TouchableOpacity style={$accountButton} onPress={() => navigation.navigate("Login")}>
+          <Text style={$buttonText}>Already have an account? Sign in</Text>
+        </TouchableOpacity>
       </Screen>
     )
   },
 )
+
+const $container: ViewStyle = {
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#f3e5f5",
+  flex: 1,
+  gap: 20,
+}
+
+const $input: ViewStyle = {
+  width: "80%",
+  height: 50,
+  fontSize: 16,
+  zIndex: 1,
+}
+
+const $buttonText: TextStyle = {
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "bold",
+}
+
+const $tapButton: ViewStyle = {
+  width: "80%",
+  backgroundColor: "#16A34A",
+  padding: 15,
+  borderRadius: 8,
+  alignItems: "center",
+  position: "relative",
+}
+
+const $textField: ViewStyle = {
+  width: "100%",
+  height: 50,
+  backgroundColor: "#fff",
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: "#ddd",
+  marginBottom: 15,
+  paddingHorizontal: 15,
+  fontSize: 16,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 5,
+  elevation: 3,
+}
+
+const $hint: TextStyle = {
+  color: "black",
+  marginBottom: 20,
+  width: "80%",
+}
 
 const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.xxl,
   paddingHorizontal: spacing.lg,
 })
 
-const $hint: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  color: colors.text,
-  marginBottom: spacing.md,
-})
+const $accountButton: ViewStyle = {
+  width: "80%",
+  backgroundColor: "#3B82F6",
+  padding: 15,
+  borderRadius: 8,
+  alignItems: "center",
+  position: "relative",
+}
 
-const $textField: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
-})
+// const $hint: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
+//   color: colors.text,
+//   marginBottom: spacing.md,
+// })
 
-const $tapButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginTop: spacing.xs,
-})
+// const $textField: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+//   marginBottom: spacing.lg,
+// })
+
+// const $tapButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+//   marginTop: spacing.xs,
+// })
