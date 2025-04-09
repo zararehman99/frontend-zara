@@ -17,9 +17,7 @@ interface FeedsScreenProps extends AppStackScreenProps<"Feeds"> {}
 export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_props) {
   const { navigation, route } = _props
   const babyId = route.params.babyId
-  const {
-      childStore,
-    } = useStores()
+  const { childStore } = useStores()
   const [baby, setBaby] = useState(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [amountError, setAmountError] = useState("")
@@ -33,7 +31,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
   useEffect(() => {
     childStore.getChildById(parseInt(babyId))
     setBaby(childStore.getChildById(parseInt(babyId)))
-  },[])
+  }, [])
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible)
@@ -79,6 +77,31 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
     }))
   }
 
+  const getAverageFeedInterval = (feeds) => {
+    if (!feeds || feeds.length < 2) return "N/A" // Default value when not enough feeds
+
+    // Step 1: Sort feeds by feedTime in descending order
+    const sortedFeeds = [...feeds].sort((a, b) => new Date(b.feedTime) - new Date(a.feedTime))
+
+    // Step 2: Compute intervals in milliseconds
+    const intervals = []
+    for (let i = 0; i < sortedFeeds.length - 1; i++) {
+      const current = new Date(sortedFeeds[i].feedTime)
+      const next = new Date(sortedFeeds[i + 1].feedTime)
+      intervals.push(Math.abs(current - next))
+    }
+
+    // Step 3: Average interval in milliseconds
+    const avgMs = intervals.reduce((sum, i) => sum + i, 0) / intervals.length
+
+    // Convert to hours and minutes
+    const totalMinutes = Math.floor(avgMs / 1000 / 60)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+
+    return `${hours}h ${minutes}m`
+  }
+
   return (
     <Screen preset="scroll" contentContainerStyle={$container}>
       <Header title="Baby Feeds" leftIcon="back" onLeftPress={() => navigation.goBack()} />
@@ -96,13 +119,13 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
               <Text style={$statLabel}>Feeds Today</Text>
             </View>
             <View style={$statItem}>
-              <Text style={$statValue}>{(
-                baby?.feeds.reduce((sum, f) => sum + f.quantityMl, 0) / 29.57
-              ).toFixed(2)} oz</Text>
+              <Text style={$statValue}>
+                {(baby?.feeds.reduce((sum, f) => sum + f.quantityMl, 0) / 29.57).toFixed(2)} oz
+              </Text>
               <Text style={$statLabel}>Today&apos;s Intake</Text>
             </View>
             <View style={$statItem}>
-              <Text style={$statValue}>3h 20m</Text>
+              <Text style={$statValue}>{getAverageFeedInterval(baby?.feeds)}</Text>
               <Text style={$statLabel}>Avg. Interval</Text>
             </View>
           </View>
@@ -111,32 +134,30 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
 
       {/* Rest of the component remains the same */}
       <View style={$feedHistoryContainer}>
-      <Text style={$sectionTitle}>Recent Feeds</Text>
+        <Text style={$sectionTitle}>Recent Feeds</Text>
 
-      {baby?.feeds.map((feed) => {
-        const localTime = new Date(feed.feedTime)
-        const timeStr = format(localTime, "hh:mm a")
-        const dateStr = format(localTime, "MMMM d, yyyy")
+        {baby?.feeds.map((feed) => {
+          const localTime = new Date(feed.feedTime)
+          const timeStr = format(localTime, "hh:mm a")
+          const dateStr = format(localTime, "MMMM d, yyyy")
 
-        return (
-          <View key={feed.id} style={$feedItem}>
-            <View style={$feedTimeContainer}>
-              <Text style={$feedTime}>{timeStr}</Text>
-              <Text style={$feedDate}>{dateStr}</Text>
+          return (
+            <View key={feed.id} style={$feedItem}>
+              <View style={$feedTimeContainer}>
+                <Text style={$feedTime}>{timeStr}</Text>
+                <Text style={$feedDate}>{dateStr}</Text>
+              </View>
+              <View style={$feedDetailsContainer}>
+                <Text style={$feedType}>
+                  {feed.feedType === "breastfeeding" ? "Breast Feed" : "Bottle Feed"}
+                </Text>
+                <Text style={$feedDuration}>{feed.durationMins} minutes</Text>
+                <Text style={$feedAmount}>{(feed.quantityMl / 29.57).toFixed(2)} oz</Text>
+              </View>
             </View>
-            <View style={$feedDetailsContainer}>
-              <Text style={$feedType}>
-                {feed.feedType === "breastfeeding" ? "Breast Feed" : "Bottle Feed"}
-              </Text>
-              <Text style={$feedDuration}>{feed.durationMins} minutes</Text>
-              <Text style={$feedAmount}>
-                {(feed.quantityMl / 29.57).toFixed(2)} oz
-              </Text>
-            </View>
-          </View>
-        )
-      })}
-    </View>
+          )
+        })}
+      </View>
 
       <Button style={$addFeedButton} onPress={toggleModal}>
         <Text style={$buttonText}>Add New Feed</Text>

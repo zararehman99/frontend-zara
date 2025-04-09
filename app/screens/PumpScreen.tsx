@@ -1,5 +1,5 @@
 import { observer } from "mobx-react-lite"
-import { FC, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import { Modal, View, ViewStyle, TextStyle, ScrollView } from "react-native"
 import { Button, Text, Screen, Header } from "@/components"
 import { AppStackScreenProps } from "../navigators"
@@ -8,12 +8,17 @@ import { TextInput } from "react-native-gesture-handler"
 import { Picker } from "@react-native-picker/picker"
 import Toast from "react-native-toast-message"
 import configDev from "@/config/config.dev"
+import { useStores } from "@/models"
 
 interface PumpScreenProps extends AppStackScreenProps<"Pump"> {}
 
 export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_props) {
   const { navigation, route } = _props
   const { babyId } = route.params
+  const { childStore } = useStores()
+  const [baby, setBaby] = useState(null)
+  const [lastSession, setLastSession] = useState(null)
+
   const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
   const [sessionDurationError, setSessionDurationError] = useState("")
   const [sessionVolumeError, setSessionVolumeError] = useState("")
@@ -27,6 +32,20 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
     amountOfMilk: "",
     typeOfMilk: "",
   })
+
+  useEffect(() => {
+    const currentBaby = childStore.getChildById(parseInt(babyId))
+    setBaby(currentBaby)
+    console.log("Baby data:", currentBaby)
+
+    if (currentBaby?.pumpSessions && currentBaby.pumpSessions.length > 0) {
+      const sortedSessions = [...currentBaby.pumpSessions].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+      )
+      console.log("Sorted session data:", sortedSessions)
+      setLastSession(sortedSessions[0])
+    }
+  }, [babyId])
 
   const handleSavePumpSession = async () => {
     console.log("pump session form data", sessionFormData)
@@ -123,12 +142,28 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
 
       <ScrollView style={$scrollContainer}>
         <View style={$sectionContainer}>
-          <Text style={$sectionTitle}>Today&apos;s Sessions</Text>
+          <Text style={$sectionTitle}>Today's Sessions</Text>
           <View style={$card}>
             <Text style={$cardTitle}>Last Session</Text>
-            <Text style={$cardText}>Time: 9:45 AM</Text>
-            <Text style={$cardText}>Duration: 18 minutes</Text>
-            <Text style={$cardText}>Volume: 4 oz (120 ml)</Text>
+
+            {lastSession ? (
+              <>
+                <Text style={$cardText}>
+                  Time:{" "}
+                  {new Date(lastSession?.createdAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+                <Text style={$cardText}>Duration: {lastSession?.sessionDuration} minutes</Text>
+                <Text style={$cardText}>
+                  Volume: {lastSession?.sessionVolume} oz ({lastSession?.sessionVolume * 30} ml)
+                </Text>
+              </>
+            ) : (
+              <Text style={$cardText}>No sessions yet.</Text>
+            )}
+
             <Button
               style={$primaryButton}
               textStyle={$buttonText}
@@ -219,7 +254,11 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
             <View style={$buttonContainer}>
               <Button
                 disabled={!sessionFormData.sessionVolume || !sessionFormData.sessionDuration}
-                style={[$button, (!sessionFormData.sessionVolume || !sessionFormData.sessionDuration) && $disabledButton]}
+                style={[
+                  $button,
+                  (!sessionFormData.sessionVolume || !sessionFormData.sessionDuration) &&
+                    $disabledButton,
+                ]}
                 textStyle={$buttonText}
                 onPress={handleSavePumpSession}
               >
@@ -264,7 +303,7 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
             ) : null}
             {/* <TextInput style={$input} placeholder="Enter type of milk (e.g., Frozen)" />
              */}
-             <Picker
+            <Picker
               style={$input}
               selectedValue={inventoryFormData.typeOfMilk}
               onValueChange={(value) => handInventoryChange("typeOfMilk", value)}
@@ -274,11 +313,7 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
               <Picker.Item label="Liquid" value="liquid" />
             </Picker>
             <View style={$buttonContainer}>
-              <Button
-                style={$button}
-                textStyle={$buttonText}
-                onPress={handleSaveInventory}
-              >
+              <Button style={$button} textStyle={$buttonText} onPress={handleSaveInventory}>
                 Save
               </Button>
               <Button

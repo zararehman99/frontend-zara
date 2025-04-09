@@ -1,6 +1,14 @@
 import { observer } from "mobx-react-lite"
 import { FC, useEffect } from "react"
-import { View, Text, ActivityIndicator, TouchableOpacity, TextStyle, ViewStyle } from "react-native"
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  TouchableOpacity,
+  TextStyle,
+  ViewStyle,
+  ScrollView,
+} from "react-native"
 import { Screen } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { useStores } from "@/models"
@@ -35,16 +43,19 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
       <View style={$contentSection}>
         {childStore.loading ? (
           <ActivityIndicator size="large" color="#6366F1" style={{ marginVertical: 30 }} />
+        ) : childStore.childrenForList.length > 0 ? (
+          <ScrollView
+            contentContainerStyle={$babyListContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {childStore.childrenForList.map((b) => (
+              <BabyProfileCard key={b.id} baby={b} />
+            ))}
+          </ScrollView>
         ) : (
-          <View style={$babyListContainer}>
-            {childStore.childrenForList.length > 0 ? (
-              childStore.childrenForList.map((b) => <BabyProfileCard key={b.id} baby={b} />)
-            ) : (
-              <Text style={$emptyStateText}>
-                No baby profiles found. Get started by adding a new baby!
-              </Text>
-            )}
-          </View>
+          <Text style={$emptyStateText}>
+            No baby profiles found. Get started by adding a new baby!
+          </Text>
         )}
       </View>
 
@@ -133,7 +144,7 @@ const $contentSection: ViewStyle = {
 }
 
 const $babyListContainer: ViewStyle = {
-  flex: 1,
+  paddingBottom: 16,
   gap: 16,
 }
 

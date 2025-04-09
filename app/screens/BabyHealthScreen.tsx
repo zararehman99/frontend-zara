@@ -35,11 +35,25 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
     const [sleepDurationError, setSleepDurationError] = useState("")
     const [diaperChangeError, setDiaperChangeError] = useState("")
     const [temperatureError, setTemperatureError] = useState("")
+    const [lastSleep, setLastSleep] = useState(null)
 
     useEffect(() => {
+      // If this method triggers an async fetch but returns the current value synchronously
       childStore.getChildById(parseInt(babyId))
-      setBaby(childStore.getChildById(parseInt(babyId)))
-    }, [])
+
+      // Make sure this is getting the latest value from the store
+      const currentBaby = childStore.getChildById(parseInt(babyId))
+      setBaby(currentBaby)
+      console.log("Baby data:", currentBaby)
+
+      if (currentBaby?.sleepLogs && currentBaby.sleepLogs.length > 0) {
+        const sortedSleepData = [...currentBaby.sleepLogs].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+        )
+        console.log("Sorted sleep data:", sortedSleepData)
+        setLastSleep(sortedSleepData[0])
+      }
+    }, [babyId])
 
     const handleSaveSleepLog = async () => {
       console.log("sleep form data", sleepFormData)
@@ -126,6 +140,12 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
       }))
     }
 
+    const formatDuration = (durationMins) => {
+      const hours = Math.floor(durationMins / 60)
+      const minutes = durationMins % 60
+      return `${hours}h ${minutes}m`
+    }
+
     return (
       <Screen preset="scroll" contentContainerStyle={$screenContainer}>
         <Header title="Baby Health & Sleep" leftIcon="back" onLeftPress={goBack} />
@@ -135,15 +155,21 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
             <Text style={$sectionTitle}>Sleep Tracker</Text>
             <View style={$card}>
               <Text style={$cardTitle}>Last Sleep</Text>
-              <Text style={$cardText}>Duration: 3h 24m</Text>
-              <Text style={$cardText}>Quality: Good</Text>
-              <Button
-                style={$trackerButton}
-                textStyle={$buttonText}
-                onPress={() => setSleepModalVisible(true)}
-              >
-                Record Sleep
-              </Button>
+              {lastSleep ? (
+                <>
+                  <Text style={$cardText}>Duration: {formatDuration(lastSleep.durationMins)}</Text>
+                  <Text style={$cardText}>Quality: {lastSleep?.sleepQuality}</Text>
+                  <Button
+                    style={$trackerButton}
+                    textStyle={$buttonText}
+                    onPress={() => setSleepModalVisible(true)}
+                  >
+                    Record Sleep
+                  </Button>
+                </>
+              ) : (
+                <Text style={$cardText}>No sleep data available.</Text>
+              )}
             </View>
           </View>
 
@@ -151,8 +177,27 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
             <Text style={$sectionTitle}>Health Journal</Text>
             <View style={$card}>
               <Text style={$cardTitle}>Recent Notes</Text>
-              <Text style={$cardText}>• Nappy change: 5 today</Text>
-              <Text style={$cardText}>• Temperature: 98.6°F (Normal)</Text>
+              {baby?.healthLogs?.length > 0 ? (
+                (() => {
+                  const latestLog = [...baby.healthLogs].sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+                  )[0]
+
+                  return (
+                    <>
+                      <Text style={$cardText}>
+                        • Nappy change: {latestLog.diaperChanges || 0} today
+                      </Text>
+                      <Text style={$cardText}>
+                        • Temperature: {latestLog.temperature || "N/A"}°F
+                      </Text>
+                    </>
+                  )
+                })()
+              ) : (
+                <Text style={$cardText}>No health logs available.</Text>
+              )}
+
               <Button
                 style={$trackerButton}
                 textStyle={$buttonText}
