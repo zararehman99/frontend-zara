@@ -19,6 +19,7 @@ export const ChildModel = types.model("Child", {
   pumpSessions: types.array(types.frozen()), // assuming it's a complex data structure
   healthLogs: types.array(types.frozen()), // assuming it's a complex data structure
   feeds: types.array(types.frozen()), // assuming it's a complex data structure
+  sleepLogs: types.array(types.frozen()),
 })
 
 // Define the ChildStore model
@@ -38,7 +39,7 @@ export const ChildStoreModel = types
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          }
+          },
         )
         if (response.ok) {
           const data = yield response.json()

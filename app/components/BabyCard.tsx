@@ -8,18 +8,6 @@ const BabyProfileCard = ({ baby }) => {
   console.log("BABY", baby)
   const navigation = useNavigation()
 
-  const getAgeText = () => {
-    if (baby.ageMonths < 1) {
-      return `${Math.round(baby.ageMonths * 30)} days`
-    } else if (baby.ageMonths < 24) {
-      return `${Math.floor(baby.ageMonths)} mo`
-    } else {
-      const years = Math.floor(baby.ageMonths / 12)
-      const months = Math.floor(baby.ageMonths % 12)
-      return `${years}y ${months}m`
-    }
-  }
-
   return (
     <Shadow distance={5} startColor="rgba(148, 163, 184, 0.1)" style={styles.shadow}>
       <TouchableOpacity
@@ -27,15 +15,22 @@ const BabyProfileCard = ({ baby }) => {
         onPress={() => navigation.navigate("BabyInfo", { babyId: baby.id })}
       >
         <View style={styles.imageContainer}>
-          <Image source={ baby.profilePic ? { uri: baby.profilePic } : require("../../assets/images/baby_profile.jpg") } style={styles.image} />
+          <Image
+            source={
+              baby.profilePic
+                ? { uri: baby.profilePic }
+                : require("../../assets/images/baby_profile.jpg")
+            }
+            style={styles.image}
+          />
         </View>
-        
+
         <View style={styles.infoContainer}>
           <Text style={styles.name}>{baby.name}</Text>
           <Text style={styles.age}>{formatAge(baby.birthDate)}</Text>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.trackButton}
           onPress={() => navigation.navigate("BabyInfo", { babyId: baby.id })}
         >
@@ -98,7 +93,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     color: "#8B5CF6",
-  }
+  },
 })
 
 export default BabyProfileCard
