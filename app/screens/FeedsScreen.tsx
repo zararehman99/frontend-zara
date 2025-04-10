@@ -139,7 +139,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
         {baby?.feeds.map((feed) => {
           const localTime = new Date(feed.feedTime)
           const timeStr = format(localTime, "hh:mm a")
-          const dateStr = format(localTime, "MMMM d, yyyy")
+          const dateStr = format(localTime, "d MMMM, yyyy")
 
           return (
             <View key={feed.id} style={$feedItem}>

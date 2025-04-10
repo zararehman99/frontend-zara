@@ -2,22 +2,15 @@ import { observer } from "mobx-react-lite"
 import { FC } from "react"
 import { ImageBackground, TextStyle, View, ViewStyle } from "react-native"
 import { Button, Screen } from "@/components"
-import { useStores } from "../models"
 import { AppStackScreenProps } from "../navigators"
-import { $styles } from "@/theme"
 import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
 
-const welcomeFace = require("../../assets/images/welcomeImage.jpg") // Background image
-
-const latchLogo = require("../../assets/images/latchLogo.png") // latch logo
+const welcomeFace = require("../../assets/images/welcomeImage.jpg")
 
 interface BabyInfoScreenProps extends AppStackScreenProps<"BabyInfo"> {}
 
 export const BabyInfoScreen: FC<BabyInfoScreenProps> = observer(function BabyInfocreen(_props) {
   const { navigation, route } = _props
-  const {
-    authenticationStore: { logout },
-  } = useStores()
   const { babyId } = route.params
   function goNext() {
     navigation.navigate("Chat")
@@ -35,9 +28,9 @@ export const BabyInfoScreen: FC<BabyInfoScreenProps> = observer(function BabyInf
     navigation.navigate("Pump", { babyId: babyId })
   }
 
-  function goToBabyWellnessTracker() {
-    navigation.navigate("TinyTushTracker", { babyId: babyId })
-  }
+  // function goToBabyWellnessTracker() {
+  //   navigation.navigate("TinyTushTracker", { babyId: babyId })
+  // }
   const $topContainerInsets = useSafeAreaInsetsStyle(["top"])
 
   return (
@@ -82,19 +75,6 @@ const $container: ViewStyle = {
   backgroundColor: "#f3e5f5",
   flex: 1,
   gap: 20,
-}
-
-const $logo: ViewStyle = {
-  width: "50%",
-  height: "22%",
-  position: "relative",
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-  top: 10,
-  transform: [{ translateX: -"50%" }],
-
-  padding: 20,
 }
 
 const $backgroundImage: ViewStyle = {
