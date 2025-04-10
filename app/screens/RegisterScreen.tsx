@@ -1,11 +1,8 @@
 import { observer } from "mobx-react-lite"
 import { FC, useEffect, useRef, useState } from "react"
 import { TextInput, TextStyle, TouchableOpacity, ViewStyle } from "react-native"
-import { Button, Screen, Text, TextField } from "@/components"
-import { useStores } from "@/models"
-import { useAppTheme } from "@/utils/useAppTheme"
+import { Screen, Text, TextField } from "@/components"
 import { AppStackScreenProps } from "@/navigators"
-import type { ThemedStyle } from "@/theme"
 import toast from "react-native-toast-message"
 import configDev from "@/config/config.dev"
 
@@ -20,13 +17,6 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
       password: "",
       confirmPassword: "",
     })
-    const {
-      authenticationStore: { setAuthToken },
-    } = useStores()
-    const {
-      themed,
-      theme: { colors },
-    } = useAppTheme()
 
     useEffect(() => {
       return () => {
@@ -148,7 +138,7 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
 const $container: ViewStyle = {
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#f3e5f5",
+  backgroundColor: "#f1f5f9",
   flex: 1,
   gap: 20,
 }
@@ -175,33 +165,11 @@ const $tapButton: ViewStyle = {
   position: "relative",
 }
 
-const $textField: ViewStyle = {
-  width: "100%",
-  height: 50,
-  backgroundColor: "#fff",
-  borderRadius: 10,
-  borderWidth: 1,
-  borderColor: "#ddd",
-  marginBottom: 15,
-  paddingHorizontal: 15,
-  fontSize: 16,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 5,
-  elevation: 3,
-}
-
 const $hint: TextStyle = {
   color: "black",
   marginBottom: 20,
   width: "80%",
 }
-
-const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingVertical: spacing.xxl,
-  paddingHorizontal: spacing.lg,
-})
 
 const $accountButton: ViewStyle = {
   width: "80%",

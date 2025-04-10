@@ -232,27 +232,6 @@ const $backgroundImage: ViewStyle = {
   padding: 10,
 }
 
-const $focusedInput: ViewStyle = {
-  borderWidth: 2,
-  borderColor: "#16A34A", // Green color when focused
-  shadowColor: "#16A34A",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 5,
-  elevation: 5,
-}
-
-const $logo: ViewStyle = {
-  width: "50%",
-  height: "22%",
-  position: "relative",
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-  margin: 0,
-  padding: 10,
-}
-
 const $logIn: ThemedStyle<TextStyle> = ({ spacing }) => ({
   textAlign: "center",
   marginBottom: spacing.sm,
@@ -261,14 +240,6 @@ const $logIn: ThemedStyle<TextStyle> = ({ spacing }) => ({
 const $hint: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   color: colors.tint,
   marginBottom: spacing.md,
-})
-
-const $textField: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
-})
-
-const $tapButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginTop: spacing.xs,
 })
 
 const $input: ViewStyle = {

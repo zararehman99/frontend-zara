@@ -38,10 +38,9 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
   const [selectedCategory, setSelectedCategory] = useState("")
   const [quantityError, setQuantityError] = useState(false)
   const [categoryError, setCategoryError] = useState(false)
-
   const itemCategoryOptions: Record<string, string[]> = {
     Milk: ["Frozen", "Liquid"],
-    Diaper: ["XL", "Medium", "Small"],
+    Nappy: ["Size 1", "Size 2", "Size 3", "Size 4"],
     // Nappy: ["1", "2", "3", "4"],
     Wipes: ["Wet", "Dry"],
     Bottle: ["Plastic", "Glass"],
@@ -140,7 +139,8 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
         <View>
           <Text style={$itemName}>{item.item}</Text>
           <Text style={$itemDetails}>
-            Quantity: {item.quantity} | Category: {item.category}
+            Quantity: {item.quantity} | {item.item === "Nappy" ? "" : "Category:"} {""}
+            {item.category}
           </Text>
         </View>
         <TouchableOpacity onPress={() => handleDeleteItem(item.id)} style={$deleteButton}>
@@ -185,7 +185,7 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
         keyboardType="numeric"
       />
 
-      <Text style={$label}>Select Category:</Text>
+      <Text style={$label}>Select {selectedItem === "Nappy" ? "Size" : "Category"}:</Text>
       <View style={[$radioGroup, categoryError && $radioGroupError]}>
         {itemCategoryOptions[selectedItem]?.map((cat) => (
           <TouchableOpacity
@@ -193,6 +193,7 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
             style={[$radioButton, selectedCategory === cat && $radioButtonSelected]}
             onPress={() => {
               setSelectedCategory(cat)
+              console.log("CATEGORY", cat)
               setCategoryError(false)
             }}
           >

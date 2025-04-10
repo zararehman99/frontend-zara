@@ -1,6 +1,14 @@
 import { observer } from "mobx-react-lite"
 import { FC, useEffect, useState } from "react"
-import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, TextStyle, ViewStyle } from "react-native"
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+  TextStyle,
+  ViewStyle,
+} from "react-native"
 import { Screen, Button } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { useStores } from "@/models"
@@ -15,7 +23,7 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
   navigation,
 }) {
   const {
-    authenticationStore: { userId, userName },
+    authenticationStore: { userId },
   } = useStores()
   const [babyData, setBabyData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -35,21 +43,21 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
           headers: { "Content-Type": "application/json" },
         },
       )
-      
+
       if (response.ok) {
         const babies = await response.json()
-        
+
         // For now, using mock data for insights
         // In a real app, you would fetch actual tracking data for each baby
-        const babiesWithData = babies.map(baby => ({
+        const babiesWithData = babies.map((baby) => ({
           ...baby,
           sleepData: generateMockSleepData(timeframe),
           feedingData: generateMockFeedingData(timeframe),
           growthData: generateMockGrowthData(timeframe),
         }))
-        
+
         setBabyData(babiesWithData)
-        
+
         // Set the first baby as selected by default
         if (babiesWithData.length > 0 && !selectedBaby) {
           setSelectedBaby(babiesWithData[0])
@@ -80,12 +88,13 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
 
   // Mock data generators
   const generateMockSleepData = (period) => {
-    const labels = period === "week" 
-      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] 
-      : period === "month" 
-        ? ["Week 1", "Week 2", "Week 3", "Week 4"] 
-        : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-    
+    const labels =
+      period === "week"
+        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        : period === "month"
+          ? ["Week 1", "Week 2", "Week 3", "Week 4"]
+          : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+
     return {
       labels,
       datasets: [
@@ -100,12 +109,13 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
   }
 
   const generateMockFeedingData = (period) => {
-    const labels = period === "week" 
-      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] 
-      : period === "month" 
-        ? ["Week 1", "Week 2", "Week 3", "Week 4"] 
-        : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-    
+    const labels =
+      period === "week"
+        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        : period === "month"
+          ? ["Week 1", "Week 2", "Week 3", "Week 4"]
+          : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+
     return {
       labels,
       datasets: [
@@ -120,20 +130,21 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
   }
 
   const generateMockGrowthData = (period) => {
-    const labels = period === "week" 
-      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] 
-      : period === "month" 
-        ? ["Week 1", "Week 2", "Week 3", "Week 4"] 
-        : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-    
+    const labels =
+      period === "week"
+        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        : period === "month"
+          ? ["Week 1", "Week 2", "Week 3", "Week 4"]
+          : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+
     let startWeight = 7.5 // Starting weight in pounds
-    
+
     return {
       labels,
       datasets: [
         {
           data: labels.map((_, index) => {
-            startWeight += (Math.random() * 0.3) // Small weight gain
+            startWeight += Math.random() * 0.3 // Small weight gain
             return parseFloat(startWeight.toFixed(1))
           }),
           color: (opacity = 1) => `rgba(255, 105, 180, ${opacity})`, // Hot pink
@@ -156,12 +167,16 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
 
   return (
     <Screen preset="scroll" contentContainerStyle={$container}>
-      <View style={$header}>
+      {/* <View style={$header}>
         <Text style={$headerText}>Baby Insights</Text>
         <TouchableOpacity style={$backButton} onPress={() => navigation.goBack()}>
           <Text style={$backButtonText}>Back</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
+      <TouchableOpacity style={$backButton} onPress={() => navigation.goBack()}>
+        <Text style={$backButtonText}>Back</Text>
+      </TouchableOpacity>
+      <Text style={$heading}>Insights</Text>
 
       {loading ? (
         <ActivityIndicator size="large" color="#8B5CF6" style={{ marginTop: 40 }} />
@@ -183,7 +198,11 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
               {/* Baby selector */}
               <View style={$babySelector}>
                 <Text style={$selectorLabel}>Select Baby:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={$selectorScroll}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={$selectorScroll}
+                >
                   {babyData.map((baby) => (
                     <TouchableOpacity
                       key={baby.id}
@@ -193,60 +212,50 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                       ]}
                       onPress={() => setSelectedBaby(baby)}
                     >
-                      <Text style={[
-                        $babyButtonText,
-                        selectedBaby && selectedBaby.id === baby.id && $babyButtonTextSelected,
-                      ]}>
+                      <Text
+                        style={[
+                          $babyButtonText,
+                          selectedBaby && selectedBaby.id === baby.id && $babyButtonTextSelected,
+                        ]}
+                      >
                         {baby.name}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
-              
+
               {/* Time period selector */}
               <View style={$timeSelector}>
                 <Text style={$selectorLabel}>Time Period:</Text>
                 <View style={$timeButtonsContainer}>
                   <TouchableOpacity
-                    style={[
-                      $timeButton,
-                      timeframe === "week" && $timeButtonSelected,
-                    ]}
+                    style={[$timeButton, timeframe === "week" && $timeButtonSelected]}
                     onPress={() => setTimeframe("week")}
                   >
-                    <Text style={[
-                      $timeButtonText,
-                      timeframe === "week" && $timeButtonTextSelected,
-                    ]}>
+                    <Text
+                      style={[$timeButtonText, timeframe === "week" && $timeButtonTextSelected]}
+                    >
                       Week
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[
-                      $timeButton,
-                      timeframe === "month" && $timeButtonSelected,
-                    ]}
+                    style={[$timeButton, timeframe === "month" && $timeButtonSelected]}
                     onPress={() => setTimeframe("month")}
                   >
-                    <Text style={[
-                      $timeButtonText,
-                      timeframe === "month" && $timeButtonTextSelected,
-                    ]}>
+                    <Text
+                      style={[$timeButtonText, timeframe === "month" && $timeButtonTextSelected]}
+                    >
                       Month
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[
-                      $timeButton,
-                      timeframe === "year" && $timeButtonSelected,
-                    ]}
+                    style={[$timeButton, timeframe === "year" && $timeButtonSelected]}
                     onPress={() => setTimeframe("year")}
                   >
-                    <Text style={[
-                      $timeButtonText,
-                      timeframe === "year" && $timeButtonTextSelected,
-                    ]}>
+                    <Text
+                      style={[$timeButtonText, timeframe === "year" && $timeButtonTextSelected]}
+                    >
                       Year
                     </Text>
                   </TouchableOpacity>
@@ -309,8 +318,10 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
 })
 
 const $container: ViewStyle = {
+  padding: 20,
   flex: 1,
   backgroundColor: "#f1f5f9",
+  alignItems: "center",
 }
 
 const $header: ViewStyle = {
@@ -328,15 +339,22 @@ const $headerText: TextStyle = {
   color: "white",
 }
 
+const $heading: TextStyle = {
+  fontSize: 24,
+  fontWeight: "bold",
+  marginBottom: 20,
+  textAlign: "center",
+}
+
 const $backButton: ViewStyle = {
-  padding: 8,
-  borderRadius: 8,
-  backgroundColor: "rgba(255, 255, 255, 0.2)",
+  alignSelf: "flex-start",
+  marginBottom: 10,
+  // backgroundColor: "rgba(255, 255, 255, 0.2)",
 }
 
 const $backButtonText: TextStyle = {
-  color: "white",
-  fontWeight: "bold",
+  fontSize: 16,
+  color: "#007bff",
 }
 
 const $scrollView: ViewStyle = {
@@ -344,8 +362,9 @@ const $scrollView: ViewStyle = {
 }
 
 const $scrollContent: ViewStyle = {
-  padding: 20,
-  paddingBottom: 40,
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
 }
 
 const $noBabiesContainer: ViewStyle = {
@@ -467,12 +486,13 @@ const $chartCard: ViewStyle = {
 const $chartTitle: TextStyle = {
   fontSize: 18,
   fontWeight: "bold",
-  marginBottom: 12,
+  textAlign: "center",
+  // marginBottom: 12,
   color: "#333",
 }
 
 const $chart: ViewStyle = {
   borderRadius: 8,
   marginVertical: 8,
-  paddingRight: 16,
+  padding: 16,
 }
