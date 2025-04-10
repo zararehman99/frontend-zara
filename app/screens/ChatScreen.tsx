@@ -1,6 +1,14 @@
 import { observer } from "mobx-react-lite"
 import { FC, useState } from "react"
-import { FlatList, TextInput, TextStyle, View, ViewStyle, KeyboardAvoidingView, Platform } from "react-native"
+import {
+  FlatList,
+  TextInput,
+  TextStyle,
+  View,
+  ViewStyle,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native"
 import { Button, Text, Screen, Icon } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { $styles, type ThemedStyle } from "@/theme"
@@ -70,23 +78,23 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
   }
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <View 
+    <View
       style={[
-        themed($messageContainer), 
-        item.isUser ? themed($userMessage) : themed($assistantMessage)
+        themed($messageContainer),
+        item.isUser ? themed($userMessage) : themed($assistantMessage),
       ]}
     >
       <Text style={item.isUser ? themed($userMessageText) : themed($assistantMessageText)}>
         {item.text}
       </Text>
       <Text style={themed($timestampText)}>
-        {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {item.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
       </Text>
     </View>
   )
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={$styles.flex1}
     >
@@ -109,12 +117,8 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
             placeholderTextColor={theme.colors.text}
             multiline
           />
-          <Button
-            preset="default"
-            onPress={sendMessage}
-            style={themed($sendButton)}
-          >
-            <Icon icon="caretRight" /> 
+          <Button preset="default" onPress={sendMessage} style={themed($sendButton)}>
+            <Icon icon="caretRight" />
           </Button>
         </View>
       </Screen>

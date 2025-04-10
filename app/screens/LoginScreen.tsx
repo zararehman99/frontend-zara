@@ -2,17 +2,15 @@ import { observer } from "mobx-react-lite"
 import Toast from "react-native-toast-message"
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
 import { TextInput, ImageBackground, TextStyle, ViewStyle, TouchableOpacity } from "react-native"
-import { Button, Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "../components"
+import { Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "../components"
 import { useStores } from "../models"
 import { AppStackScreenProps } from "../navigators"
-import { $styles, type ThemedStyle } from "@/theme"
+import { type ThemedStyle } from "@/theme"
 import { useAppTheme } from "@/utils/useAppTheme"
 import { ActivityIndicator } from "react-native"
 import configDev from "@/config/config.dev"
 
-const loginFace = require("../../assets/images/loginFace.jpg") // Background image
-
-const loginLogo = require("../../assets/images/latchLogo.png") // Background image
+const loginFace = require("../../assets/images/loginFace.jpg")
 
 export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function LoginScreen({
   navigation,
@@ -208,7 +206,6 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
         disabled={isLoginDisabled}
         onPress={login}
       >
-        
         {isSubmitted ? (
           <>
             <Text style={$buttonText}>Loading</Text>

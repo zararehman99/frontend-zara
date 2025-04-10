@@ -42,7 +42,7 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
 
       <View style={$contentSection}>
         {childStore.loading ? (
-          <ActivityIndicator size="large" color="#6366F1" style={{ marginVertical: 30 }} />
+          <ActivityIndicator size="large" color="#6366F1" style={$activityIndicator} />
         ) : childStore.childrenForList.length > 0 ? (
           <ScrollView
             contentContainerStyle={$babyListContainer}
@@ -101,6 +101,10 @@ const $container: ViewStyle = {
   flex: 1,
   backgroundColor: "#f1f5f9",
   paddingHorizontal: 24,
+}
+
+const $activityIndicator: ViewStyle = {
+  marginVertical: 30,
 }
 
 const $topSection: ViewStyle = {
