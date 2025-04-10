@@ -304,7 +304,7 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
                   }
                 }}
                 style={$input}
-                placeholder="Diaper changes today"
+                placeholder="Nappy changes today"
               />
               {diaperChangeError ? <Text style={{ color: "red" }}>{diaperChangeError}</Text> : null}
               <TextInput

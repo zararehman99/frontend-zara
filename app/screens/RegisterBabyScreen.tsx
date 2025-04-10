@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
@@ -12,19 +11,20 @@ import {
   TextStyle,
 } from "react-native"
 import { Picker } from "@react-native-picker/picker"
-import { Screen, Header } from "@/components"
+import { Screen } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { launchImageLibrary } from "react-native-image-picker"
 import Toast from "react-native-toast-message" // Import Toast for notifications
 import configDev from "@/config/config.dev"
 import { useStores } from "@/models"
+
 interface RegisterBabyScreenProps extends AppStackScreenProps<"RegisterBaby"> {}
 
 export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
   function RegisterBabyScreen(_props) {
     const { navigation } = _props
     const {
-      authenticationStore: { userId, userName, logout },
+      authenticationStore: { userId },
     } = useStores()
 
     const [loading, setLoading] = useState(false)
@@ -37,6 +37,7 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
       imageUri: null,
       birthDate: new Date(),
     })
+    // const [isButtonDisabled, setIsButtonDisabled] = useState(true);
 
     const handleChange = (name: keyof typeof formData, value: string) => {
       setFormData((prevState) => ({
@@ -44,12 +45,36 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
         [name]: value,
       }))
     }
+
     // Check if all fields are filled
-    // const isFormValid = babyName && babyAge && babyWeight && babyHeight && gender && birthDate
 
     const handleSubmit = async () => {
       setLoading(true)
       console.log("formData", formData)
+      // Validate form fields
+      const missingFields: string[] = []
+
+      // Check if required fields are present
+      if (!formData.babyName) missingFields.push("Baby Name")
+      if (!formData.babyAge) missingFields.push("Baby Age")
+      if (!formData.babyWeight) missingFields.push("Baby Weight")
+      if (!formData.babyHeight) missingFields.push("Baby Height")
+      if (!formData.gender) missingFields.push("Gender")
+      if (!formData.birthDate) missingFields.push("Birth Date")
+
+      // If any fields are missing, show toast and return
+      if (missingFields.length > 0) {
+        const missingFieldsMessage = `Please fill in the following fields:`
+        const missingFieldsList = missingFields.join("\n")
+        Toast.show({
+          type: "error",
+          text1: missingFieldsMessage,
+          text2: missingFieldsList,
+          position: "top",
+        })
+        setLoading(false)
+        return
+      }
       try {
         const response = await fetch(
           `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/create-baby/${userId}`,
@@ -72,7 +97,7 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
           const errorData = await response.json()
           Toast.show({
             type: "error",
-            text1: errorData.message || "invalid info. Please try again.",
+            text1: errorData.message || "Invalid info. Please try again.",
             position: "top",
           })
         }
@@ -87,17 +112,21 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
     const pickImage = () => {
       launchImageLibrary({ mediaType: "photo", includeBase64: false }, (response) => {
         if (response.assets && response.assets.length > 0) {
-          setImageUri(response.assets[0].uri)
+          setFormData((prevState) => ({
+            ...prevState,
+            imageUri: response.assets[0].uri,
+          }))
         }
       })
     }
 
     return (
       <Screen preset="fixed" contentContainerStyle={$container}>
-        <Header title="back to home" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+        <TouchableOpacity style={$backButton} onPress={() => navigation.goBack()}>
+          <Text style={$backButtonText}>Back</Text>
+        </TouchableOpacity>
+        <Text style={$title}>Enter Baby&apos;s Information</Text>
         <ScrollView contentContainerStyle={$formContainer}>
-          <Text style={$title}>Enter Baby's Information</Text>
-
           <TextInput
             style={$input}
             placeholder="Baby Name"
@@ -131,7 +160,6 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
             <input
               type="date"
               style={$dateInput}
-              // style={$dateInput} // Apply styles manually
               value={
                 formData.birthDate ? new Date(formData.birthDate).toISOString().split("T")[0] : ""
               } // Format YYYY-MM-DD
@@ -139,7 +167,7 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
             />
           </View>
 
-          {/* Gender Dropdown with fixed UI */}
+          {/* Gender Dropdown */}
           <View style={$pickerContainer}>
             <Text style={$pickerLabel}>Gender</Text>
             <View style={$pickerWrapper}>
@@ -165,10 +193,10 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
             )}
           </View>
 
+          {/* Submit Button */}
           <TouchableOpacity
-            style={$button}
+            style={$button} // Use disabled style if button is disabled
             onPress={handleSubmit}
-            // disabled={!isFormValid}
           >
             <Text style={$buttonText}>Submit</Text>
           </TouchableOpacity>
@@ -188,6 +216,15 @@ const $formContainer: ViewStyle = {
   flexGrow: 1,
   justifyContent: "center",
   paddingVertical: 30,
+}
+
+const $backButton: ViewStyle = {
+  alignSelf: "flex-start",
+  marginBottom: 10,
+}
+const $backButtonText: TextStyle = {
+  fontSize: 16,
+  color: "#007bff",
 }
 
 const $title: TextStyle = {
@@ -280,14 +317,16 @@ const $imageButtonText: TextStyle = {
 }
 
 const $imagePreview: ViewStyle = {
-  width: 150,
-  height: 150,
+  width: 100,
+  height: 100,
   marginTop: 10,
   borderRadius: 10,
+  borderWidth: 1,
+  borderColor: "#ddd",
 }
 
 const $button: ViewStyle = {
-  backgroundColor: "#10B981", // Blue color for the button
+  backgroundColor: "#10B981", // Default green color
   paddingVertical: 15,
   borderRadius: 10,
   marginTop: 20,
@@ -300,22 +339,21 @@ const $button: ViewStyle = {
   elevation: 3,
 }
 
+// const $disabledButton: ViewStyle = {
+//   backgroundColor: "#A9A9A9", // Darker green color for the disabled button
+//   paddingVertical: 15,
+//   borderRadius: 10,
+//   marginTop: 20,
+//   justifyContent: "center",
+//   alignItems: "center",
+//   shadowColor: "#000",
+//   shadowOffset: { width: 0, height: 2 },
+//   shadowOpacity: 0.1,
+//   shadowRadius: 5,
+//   elevation: 3,
+// }
+
 const $buttonText: TextStyle = {
-  color: "#fff",
   fontSize: 18,
-  fontWeight: "bold",
-}
-
-const $dateButton: ViewStyle = {
-  padding: 10,
-  borderWidth: 1,
-  borderColor: "#ccc",
-  borderRadius: 5,
-  alignItems: "center",
-  backgroundColor: "#f8f8f8",
-}
-
-const $dateButtonText: TextStyle = {
-  fontSize: 16,
-  color: "#333",
+  color: "#fff",
 }

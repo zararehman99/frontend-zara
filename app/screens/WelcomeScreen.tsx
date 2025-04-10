@@ -32,7 +32,7 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = observer(function WelcomeSc
   return (
     <Screen preset="fixed" contentContainerStyle={$container}>
       <View style={$topSection}>
-        <Text style={$welcomeHeading}>Welcome,</Text>
+        <Text style={$welcomeHeading}>Welcome Back,</Text>
         <Text style={$userName}>{userName}!</Text>
 
         <TouchableOpacity style={$logoutButton} onPress={logout}>
