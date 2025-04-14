@@ -111,7 +111,7 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
   const handleDeleteItem = async (itemId: string) => {
     try {
       const response = await fetch(
-        `${configDev.VITE_LATCH_BACKEND_URL}/api/inventory/delete/${itemId}`,
+        `${configDev.VITE_LATCH_BACKEND_URL}/api/users/inventory/delete/${itemId}`,
         {
           method: "DELETE",
         },
