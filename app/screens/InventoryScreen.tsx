@@ -38,6 +38,7 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
   const [selectedCategory, setSelectedCategory] = useState("")
   const [quantityError, setQuantityError] = useState(false)
   const [categoryError, setCategoryError] = useState(false)
+  const [loading, setLoading] = useState(true)
   const itemCategoryOptions: Record<string, string[]> = {
     Milk: ["Frozen", "Liquid"],
     Nappy: ["Size 1", "Size 2", "Size 3", "Size 4"],
@@ -53,6 +54,7 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
       )
       const data = await res.json()
       setInventory(data)
+      setLoading(false)
     } catch (err) {
       Toast.show({
         type: "error",
@@ -60,6 +62,7 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
         position: "top",
       })
       console.error("Error fetching inventory", err)
+      setLoading(false)
     }
   }
 
@@ -205,14 +208,19 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
       <TouchableOpacity style={$saveButton} onPress={handleAddItem}>
         <Text style={$saveButtonText}>+ Add Item</Text>
       </TouchableOpacity>
-
-      <FlatList
-        data={inventory}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        style={$flatListStyle}
-        contentContainerStyle={$contentContainerStyle}
-      />
+      {loading ? (
+        <View style={$loaderWrapper}>
+          <Text style={$loaderText}>Loading Inventory...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={inventory}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          style={$flatListStyle}
+          contentContainerStyle={$contentContainerStyle}
+        />
+      )}
     </Screen>
   )
 })
@@ -224,6 +232,18 @@ const $flatListStyle: ViewStyle = {
 
 const $contentContainerStyle: ViewStyle = {
   paddingBottom: 20,
+}
+
+const $loaderWrapper: ViewStyle = {
+  paddingVertical: 32,
+  alignItems: "center",
+  justifyContent: "center",
+}
+
+const $loaderText: TextStyle = {
+  fontSize: 16,
+  color: "#000",
+  fontStyle: "italic",
 }
 
 const $container: ViewStyle = {
