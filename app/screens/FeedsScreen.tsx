@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite"
 import { FC, useEffect, useState } from "react"
-import { Image, Modal, ImageStyle, TextStyle, View, ViewStyle } from "react-native"
+import { Image, Modal, ImageStyle, TextStyle, View, ViewStyle, ScrollView } from "react-native"
 import { Button, Header, Screen, Text } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { TextInput } from "react-native-gesture-handler"
@@ -120,7 +120,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
             </View>
             <View style={$statItem}>
               <Text style={$statValue}>
-                {(baby?.feeds.reduce((sum, f) => sum + f.quantityMl, 0) / 29.57).toFixed(2)} oz
+                {(baby?.feeds.reduce((sum, f) => sum + f.quantityMl, 0) / 29.57).toFixed(2)} ml
               </Text>
               <Text style={$statLabel}>Today&apos;s Intake</Text>
             </View>
@@ -136,27 +136,29 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
       <View style={$feedHistoryContainer}>
         <Text style={$sectionTitle}>Recent Feeds</Text>
 
-        {baby?.feeds.map((feed) => {
-          const localTime = new Date(feed.feedTime)
-          const timeStr = format(localTime, "hh:mm a")
-          const dateStr = format(localTime, "d MMMM, yyyy")
+        <ScrollView style={{ flex: 1 }}>
+          {baby?.feeds.map((feed) => {
+            const localTime = new Date(feed.feedTime)
+            const timeStr = format(localTime, "hh:mm a")
+            const dateStr = format(localTime, "d MMMM, yyyy")
 
-          return (
-            <View key={feed.id} style={$feedItem}>
-              <View style={$feedTimeContainer}>
-                <Text style={$feedTime}>{timeStr}</Text>
-                <Text style={$feedDate}>{dateStr}</Text>
+            return (
+              <View key={feed.id} style={$feedItem}>
+                <View style={$feedTimeContainer}>
+                  <Text style={$feedTime}>{timeStr}</Text>
+                  <Text style={$feedDate}>{dateStr}</Text>
+                </View>
+                <View style={$feedDetailsContainer}>
+                  <Text style={$feedType}>
+                    {feed.feedType === "breastfeeding" ? "Breast Feed" : "Bottle Feed"}
+                  </Text>
+                  <Text style={$feedDuration}>{feed.durationMins} minutes</Text>
+                  <Text style={$feedAmount}>{(feed.quantityMl / 29.57).toFixed(2)} ml</Text>
+                </View>
               </View>
-              <View style={$feedDetailsContainer}>
-                <Text style={$feedType}>
-                  {feed.feedType === "breastfeeding" ? "Breast Feed" : "Bottle Feed"}
-                </Text>
-                <Text style={$feedDuration}>{feed.durationMins} minutes</Text>
-                <Text style={$feedAmount}>{(feed.quantityMl / 29.57).toFixed(2)} oz</Text>
-              </View>
-            </View>
-          )
-        })}
+            )
+          })}
+        </ScrollView>
       </View>
 
       <Button style={$addFeedButton} onPress={toggleModal}>
@@ -193,7 +195,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
                   setAmountError("Please enter a valid number")
                 }
               }}
-              placeholder="Amount (oz)"
+              placeholder="Amount (ml)"
               keyboardType="numeric"
             />
             {amountError ? <Text style={{ color: "red" }}>{amountError}</Text> : null}
@@ -368,6 +370,7 @@ const $feedHistoryContainer: ViewStyle = {
   shadowOpacity: 0.1,
   shadowRadius: 4,
   elevation: 3,
+  flex: 1,
 }
 
 const $sectionTitle: TextStyle = {
