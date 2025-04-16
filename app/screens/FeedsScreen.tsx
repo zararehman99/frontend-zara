@@ -31,17 +31,20 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [amountError, setAmountError] = useState("")
   const [durationError, setDurationError] = useState("")
-  const [timerActive, setTimerActive] = useState(false)
-  const [timerSeconds, setTimerSeconds] = useState(0)
-  const [showSubOptions, setShowSubOptions] = useState(false)
-  const timerRef = useRef(null)
+  const [leftTimerActive, setLeftTimerActive] = useState(false)
+  const [rightTimerActive, setRightTimerActive] = useState(false)
+  const [leftTimerSeconds, setLeftTimerSeconds] = useState(0)
+  const [rightTimerSeconds, setRightTimerSeconds] = useState(0)
+  const leftTimerRef = useRef(null)
+  const rightTimerRef = useRef(null)
   const startTimeRef = useRef(null)
 
   const [formData, setFormData] = useState({
-    feedType: "breastfeeding",
-    breastfeedingType: "freshlyExpressed", // direct, freshlyExpressed, frozen
+    feedType: "breastfeeding", // breastfeeding or bottle
+    bottleType: "formula", // formula or breastmilk
+    leftDuration: "0",
+    rightDuration: "0",
     amount: "",
-    duration: "0",
     startTime: null,
     endTime: null,
   })
@@ -51,102 +54,151 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
     setBaby(childStore.getChildById(parseInt(babyId)))
 
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
+      if (leftTimerRef.current) {
+        clearInterval(leftTimerRef.current)
+      }
+      if (rightTimerRef.current) {
+        clearInterval(rightTimerRef.current)
       }
     }
   }, [])
-
-  // Update subtype options when feed type changes
-  useEffect(() => {
-    if (formData.feedType === "breastfeeding") {
-      setShowSubOptions(true)
-    } else {
-      setShowSubOptions(false)
-    }
-  }, [formData.feedType])
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible)
     if (!isModalVisible) {
       resetForm()
     } else {
-      // Stop timer if modal is closing
-      if (timerActive) {
-        stopTimer()
+      // Stop timers if modal is closing
+      if (leftTimerActive) {
+        stopLeftTimer()
+      }
+      if (rightTimerActive) {
+        stopRightTimer()
       }
     }
   }
 
   const resetForm = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
+    if (leftTimerRef.current) {
+      clearInterval(leftTimerRef.current)
+      leftTimerRef.current = null
+    }
+    if (rightTimerRef.current) {
+      clearInterval(rightTimerRef.current)
+      rightTimerRef.current = null
     }
 
-    setTimerActive(false)
-    setTimerSeconds(0)
+    setLeftTimerActive(false)
+    setRightTimerActive(false)
+    setLeftTimerSeconds(0)
+    setRightTimerSeconds(0)
     setFormData({
       feedType: "breastfeeding",
-      breastfeedingType: "freshlyExpressed",
+      bottleType: "formula",
+      leftDuration: "0",
+      rightDuration: "0",
       amount: "",
-      duration: "0",
       startTime: null,
       endTime: null,
     })
   }
 
-  const startTimer = () => {
-    if (timerActive) return
+  const startLeftTimer = () => {
+    if (leftTimerActive) return
 
-    // Record start time
-    const now = new Date()
-    startTimeRef.current = now
+    // Record start time if not already set
+    if (!startTimeRef.current) {
+      const now = new Date()
+      startTimeRef.current = now
+      setFormData((prev) => ({
+        ...prev,
+        startTime: now,
+      }))
+    }
 
-    setFormData((prev) => ({
-      ...prev,
-      startTime: now,
-    }))
+    // Stop right timer if running
+    if (rightTimerActive) {
+      stopRightTimer()
+    }
 
-    // Start timer interval
-    setTimerActive(true)
-    setTimerSeconds(0)
-
-    timerRef.current = setInterval(() => {
-      setTimerSeconds((prev) => {
+    // Start left timer interval
+    setLeftTimerActive(true)
+    leftTimerRef.current = setInterval(() => {
+      setLeftTimerSeconds((prev) => {
         const newSeconds = prev + 1
         // Update minutes in the form data
         const minutes = Math.floor(newSeconds / 60)
         setFormData((formPrev) => ({
           ...formPrev,
-          duration: minutes.toString(),
+          leftDuration: minutes.toString(),
         }))
         return newSeconds
       })
     }, 1000)
   }
 
-  const stopTimer = () => {
-    if (!timerActive) return
+  const stopLeftTimer = () => {
+    if (!leftTimerActive) return
 
     // Stop timer
-    clearInterval(timerRef.current)
-    timerRef.current = null
-    setTimerActive(false)
-    console.log("timerSeconds:", timerSeconds)
-    const duration = Math.ceil(timerSeconds / 60)
-    console.log("Duration in minutes:", duration)
+    clearInterval(leftTimerRef.current)
+    leftTimerRef.current = null
+    setLeftTimerActive(false)
+    
+    const duration = Math.ceil(leftTimerSeconds / 60)
     setFormData((prev) => ({
       ...prev,
-      duration: duration.toString(),
+      leftDuration: duration.toString(),
     }))
+  }
 
-    // // Record end time
-    // const endTime = new Date()
-    // setFormData((prev) => ({
-    //   ...prev,
-    //   endTime: endTime,
-    // }))
+  const startRightTimer = () => {
+    if (rightTimerActive) return
+
+    // Record start time if not already set
+    if (!startTimeRef.current) {
+      const now = new Date()
+      startTimeRef.current = now
+      setFormData((prev) => ({
+        ...prev,
+        startTime: now,
+      }))
+    }
+
+    // Stop left timer if running
+    if (leftTimerActive) {
+      stopLeftTimer()
+    }
+
+    // Start right timer interval
+    setRightTimerActive(true)
+    rightTimerRef.current = setInterval(() => {
+      setRightTimerSeconds((prev) => {
+        const newSeconds = prev + 1
+        // Update minutes in the form data
+        const minutes = Math.floor(newSeconds / 60)
+        setFormData((formPrev) => ({
+          ...formPrev,
+          rightDuration: minutes.toString(),
+        }))
+        return newSeconds
+      })
+    }, 1000)
+  }
+
+  const stopRightTimer = () => {
+    if (!rightTimerActive) return
+
+    // Stop timer
+    clearInterval(rightTimerRef.current)
+    rightTimerRef.current = null
+    setRightTimerActive(false)
+    
+    const duration = Math.ceil(rightTimerSeconds / 60)
+    setFormData((prev) => ({
+      ...prev,
+      rightDuration: duration.toString(),
+    }))
   }
 
   const formatTimerDisplay = (seconds) => {
@@ -162,20 +214,49 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
     return `${hrs > 0 ? `${hrs}h ` : ""}${mins}m`
   }
 
+  const getTotalDuration = () => {
+    const leftDuration = parseInt(formData.leftDuration || "0")
+    const rightDuration = parseInt(formData.rightDuration || "0")
+    return leftDuration + rightDuration
+  }
+
   const handleSaveFeed = async () => {
-    // Ensure timer is stopped
-    if (timerActive) {
-      stopTimer()
+    // Ensure timers are stopped
+    if (leftTimerActive) {
+      stopLeftTimer()
+    }
+    if (rightTimerActive) {
+      stopRightTimer()
+    }
+
+    // Set end time if not already set
+    if (!formData.endTime) {
+      setFormData((prev) => ({
+        ...prev,
+        endTime: new Date(),
+      }))
+    }
+
+    // Validate based on feed type
+    if (formData.feedType === "bottle" && !formData.amount) {
+      setAmountError("Please enter the amount for bottle feeding")
+      return
+    }
+
+    if (formData.feedType === "breastfeeding" && getTotalDuration() === 0) {
+      setDurationError("Please track or enter duration for at least one breast")
+      return
     }
 
     // Prepare data for submission
     const submissionData = {
       ...formData,
-      // If it's breastfeeding, include the subtype
-      feedType:
-        formData.feedType === "breastfeeding"
-          ? `breastfeeding:${formData.breastfeedingType}`
-          : formData.feedType,
+      // Format feed type for backend
+      feedType: formData.feedType === "bottle" 
+        ? `bottle:${formData.bottleType}` 
+        : "breastfeeding",
+      // Total duration is sum of left and right
+      duration: getTotalDuration().toString(),
     }
 
     try {
@@ -251,21 +332,14 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
 
     if (feedTypeString.includes(":")) {
       const [main, sub] = feedTypeString.split(":")
-      if (main === "breastfeeding") {
-        const subLabel =
-          sub === "freshlyExpressed" ? "Freshly Expressed" : sub === "frozen" ? "Frozen" : sub
-        return { main: "Breast Feed", sub: subLabel }
+      if (main === "bottle") {
+        return { main: "Bottle", sub: sub === "formula" ? "Formula Milk" : "Breast Milk" }
       }
       return { main, sub }
     }
 
     return {
-      main:
-        feedTypeString === "breastfeeding"
-          ? "Breast Feed"
-          : feedTypeString === "formula"
-            ? "Formula Milk"
-            : feedTypeString,
+      main: feedTypeString === "breastfeeding" ? "Breast Feed" : feedTypeString,
       sub: "",
     }
   }
@@ -350,75 +424,117 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
               style={$picker}
             >
               <Picker.Item label="Breast Feeding" value="breastfeeding" />
-              <Picker.Item label="Formula Milk" value="formula" />
+              <Picker.Item label="Bottle" value="bottle" />
             </Picker>
 
-            {/* Breast Feeding Sub-options */}
-            {showSubOptions && (
+            {/* Bottle Type Sub-options */}
+            {formData.feedType === "bottle" && (
               <>
-                <Text style={$inputLabel}>Breast Feeding Type:</Text>
+                <Text style={$inputLabel}>Bottle Content:</Text>
                 <Picker
-                  selectedValue={formData.breastfeedingType}
-                  onValueChange={(value) => handleChange("breastfeedingType", value)}
+                  selectedValue={formData.bottleType}
+                  onValueChange={(value) => handleChange("bottleType", value)}
                   style={$picker}
                 >
-                  <Picker.Item label="Freshly Expressed" value="freshlyExpressed" />
-                  <Picker.Item label="Frozen" value="frozen" />
+                  <Picker.Item label="Formula Milk" value="formula" />
+                  <Picker.Item label="Breast Milk" value="breastmilk" />
                 </Picker>
               </>
             )}
 
-            {/* Timer Section */}
-            <View style={$timerSection}>
-              <Text style={$inputLabel}>Feeding Duration:</Text>
+            {/* Timer Section - Only for breastfeeding */}
+            {formData.feedType === "breastfeeding" && (
+              <View style={$timerSection}>
+                <Text style={$inputLabel}>Breast Feeding Timer:</Text>
 
-              <View style={$timerDisplay}>
-                <Text style={$timerText}>{formatTimerDisplay(timerSeconds)}</Text>
-                <Text style={$timerMinutes}>
-                  {formatDuration(parseInt(formData.duration || "0"))}
-                </Text>
+                {/* Breast Timer Controls */}
+                <View style={$breastTimersContainer}>
+                  {/* Left Breast Timer */}
+                  <View style={$breastTimerCard}>
+                    <View style={$timerHeader}>
+                      <Text style={$breastLabel}>Left Breast</Text>
+                      <Text style={$timerText}>{formatTimerDisplay(leftTimerSeconds)}</Text>
+                    </View>
+                    
+                    <View style={$iconButtonsContainer}>
+                      <TouchableOpacity
+                        style={[
+                          $iconButton,
+                          leftTimerActive ? $timerButtonActive : $timerButtonInactive
+                        ]}
+                        onPress={leftTimerActive ? stopLeftTimer : startLeftTimer}
+                      >
+                        <Text style={$iconButtonText}>L</Text>
+                      </TouchableOpacity>
+                      
+                      <TextInput
+                        style={$durationInput}
+                        value={formData.leftDuration?.toString()}
+                        onChangeText={(value) => {
+                          if (/^\d*$/.test(value)) {
+                            setDurationError("")
+                            handleChange("leftDuration", value)
+                          } else {
+                            setDurationError("Please enter a valid number")
+                          }
+                        }}
+                        placeholder="mins"
+                        keyboardType="numeric"
+                      />
+                      <Text style={$durationLabel}>min</Text>
+                    </View>
+                  </View>
+
+                  {/* Right Breast Timer */}
+                  <View style={$breastTimerCard}>
+                    <View style={$timerHeader}>
+                      <Text style={$breastLabel}>Right Breast</Text>
+                      <Text style={$timerText}>{formatTimerDisplay(rightTimerSeconds)}</Text>
+                    </View>
+                    
+                    <View style={$iconButtonsContainer}>
+                      <TouchableOpacity
+                        style={[
+                          $iconButton,
+                          rightTimerActive ? $timerButtonActive : $timerButtonInactive
+                        ]}
+                        onPress={rightTimerActive ? stopRightTimer : startRightTimer}
+                      >
+                        <Text style={$iconButtonText}>R</Text>
+                      </TouchableOpacity>
+                      
+                      <TextInput
+                        style={$durationInput}
+                        value={formData.rightDuration?.toString()}
+                        onChangeText={(value) => {
+                          if (/^\d*$/.test(value)) {
+                            setDurationError("")
+                            handleChange("rightDuration", value)
+                          } else {
+                            setDurationError("Please enter a valid number")
+                          }
+                        }}
+                        placeholder="mins"
+                        keyboardType="numeric"
+                      />
+                      <Text style={$durationLabel}>min</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {durationError ? <Text style={$errorText}>{durationError}</Text> : null}
+                
+                <View style={$totalDurationContainer}>
+                  <Text style={$totalDurationLabel}>Total Feeding Time:</Text>
+                  <Text style={$totalDurationValue}>
+                    {formatDuration(getTotalDuration())}
+                  </Text>
+                </View>
               </View>
+            )}
 
-              <View style={$timerControls}>
-                <TouchableOpacity
-                  style={[$timerButton, timerActive ? $timerButtonDisabled : $timerButtonStart]}
-                  onPress={startTimer}
-                  disabled={timerActive}
-                >
-                  <Text style={$timerButtonText}>Start Timer</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[$timerButton, !timerActive ? $timerButtonDisabled : $timerButtonStop]}
-                  onPress={stopTimer}
-                  disabled={!timerActive}
-                >
-                  <Text style={$timerButtonText}>Stop Timer</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={$inputLabel}>Or enter duration manually (minutes):</Text>
-              <TextInput
-                style={$input}
-                value={formData.duration?.toString()}
-                onChangeText={(value) => {
-                  if (/^\d*$/.test(value)) {
-                    setDurationError("")
-                    handleChange("duration", value)
-                  } else {
-                    setDurationError("Please enter a valid number")
-                  }
-                }}
-                placeholder="Duration (mins)"
-                keyboardType="numeric"
-              />
-              {durationError ? <Text style={$errorText}>{durationError}</Text> : null}
-            </View>
-
-            {/* Amount Input - only show for formula or expressed milk */}
-            {(formData.feedType === "formula" ||
-              (formData.feedType === "breastfeeding" &&
-                (formData.breastfeedingType === "frozen"))) && (
+            {/* Amount Input - only show for bottle feeding */}
+            {formData.feedType === "bottle" && (
               <>
                 <Text style={$inputLabel}>Amount (ml):</Text>
                 <TextInput
@@ -442,10 +558,14 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
             {/* Action Buttons */}
             <View style={$buttonContainer}>
               <Button
-                disabled={!formData.feedType || !formData.duration || formData.duration === "0"}
+                disabled={
+                  (formData.feedType === "breastfeeding" && getTotalDuration() === 0) ||
+                  (formData.feedType === "bottle" && !formData.amount)
+                }
                 style={[
                   $button,
-                  (!formData.feedType || !formData.duration || formData.duration === "0") &&
+                  ((formData.feedType === "breastfeeding" && getTotalDuration() === 0) ||
+                    (formData.feedType === "bottle" && !formData.amount)) &&
                     $disabledButton,
                 ]}
                 onPress={handleSaveFeed}
@@ -677,58 +797,106 @@ const $timerSection: ViewStyle = {
   width: "100%",
 }
 
-const $timerDisplay: ViewStyle = {
-  backgroundColor: "#F0F0F0",
-  padding: 16,
-  borderRadius: 8,
-  alignItems: "center",
-  marginBottom: 10,
-}
-
-const $timerText: TextStyle = {
-  fontSize: 32,
-  fontWeight: "bold",
-  color: "#333",
-  fontFamily: "monospace",
-}
-
-const $timerMinutes: TextStyle = {
-  fontSize: 14,
-  color: "#666",
-  marginTop: 4,
-}
-
-const $timerControls: ViewStyle = {
+// New styles for simplified breast timer UI
+const $breastTimersContainer: ViewStyle = {
   flexDirection: "row",
   justifyContent: "space-between",
   marginBottom: 16,
 }
 
-const $timerButton: ViewStyle = {
-  paddingVertical: 12,
-  paddingHorizontal: 24,
+const $breastTimerCard: ViewStyle = {
+  width: "48%",  // Nearly half width to fit side by side
+  backgroundColor: "#F0F7FF",
   borderRadius: 8,
-  flex: 1,
-  marginHorizontal: 5,
+  padding: 12,
+  borderWidth: 1,
+  borderColor: "#D1E3FF",
+}
+
+const $timerHeader: ViewStyle = {
   alignItems: "center",
+  marginBottom: 8,
 }
 
-const $timerButtonStart: ViewStyle = {
-  backgroundColor: "#3B82F6",
+const $breastLabel: TextStyle = {
+  fontSize: 14,
+  fontWeight: "600",
+  color: "#333",
+  marginBottom: 4,
 }
 
-const $timerButtonStop: ViewStyle = {
-  backgroundColor: "#EF4444",
+const $iconButtonsContainer: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
 }
 
-const $timerButtonDisabled: ViewStyle = {
-  backgroundColor: "#A0A0A0",
+const $iconButton: ViewStyle = {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  justifyContent: "center",
+  alignItems: "center",
+  marginRight: 8,
 }
 
-const $timerButtonText: TextStyle = {
-  color: "white",
+const $timerButtonActive: ViewStyle = {
+  backgroundColor: "#EF4444",  // Red when active
+}
+
+const $timerButtonInactive: ViewStyle = {
+  backgroundColor: "#3B82F6",  // Blue when inactive
+}
+
+const $iconButtonText: TextStyle = {
+  fontSize: 20,
   fontWeight: "bold",
+  color: "white",
+}
+
+const $durationInput: ViewStyle = {
+  width: 50,
+  borderWidth: 1,
+  borderColor: "#ccc",
+  borderRadius: 4,
+  padding: 4,
+  backgroundColor: "white",
+  textAlign: "center",
+}
+
+const $durationLabel: TextStyle = {
+  fontSize: 12,
+  color: "#666",
+  marginLeft: 4,
+}
+
+const $timerText: TextStyle = {
+  fontSize: 20,
+  fontWeight: "bold",
+  color: "#333",
+  fontFamily: "monospace",
+}
+
+const $totalDurationContainer: ViewStyle = {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  backgroundColor: "#E6F7FF",
+  padding: 12,
+  borderRadius: 8,
+  marginTop: 8,
+  marginBottom: 12,
+}
+
+const $totalDurationLabel: TextStyle = {
   fontSize: 16,
+  fontWeight: "600",
+  color: "#0056B3",
+}
+
+const $totalDurationValue: TextStyle = {
+  fontSize: 16,
+  fontWeight: "bold",
+  color: "#0056B3",
 }
 
 const $buttonContainer: ViewStyle = {
