@@ -38,7 +38,7 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
   const [quantityError, setQuantityError] = useState(false)
   const [categoryError, setCategoryError] = useState(false)
   const itemCategoryOptions: Record<string, string[]> = {
-    Milk: ["Frozen", "Liquid"],
+    Milk: ["Breast Milk", "Formula Milk"],
     Nappy: ["Size 1", "Size 2", "Size 3", "Size 4"],
     // Nappy: ["1", "2", "3", "4"],
     Wipes: ["Wet", "Dry"],

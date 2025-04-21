@@ -18,6 +18,7 @@ import Toast from "react-native-toast-message"
 import { useStores } from "@/models"
 import { Picker } from "@react-native-picker/picker"
 import { format } from "date-fns"
+import { getSnapshot } from "mobx-state-tree"
 
 const babyImage = require("../../assets/images/baby_profile.jpg")
 
@@ -26,7 +27,11 @@ interface FeedsScreenProps extends AppStackScreenProps<"Feeds"> {}
 export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_props) {
   const { navigation, route } = _props
   const babyId = route.params.babyId
-  const { childStore } = useStores()
+  const {
+    childStore,
+    inventoryStore,
+    authenticationStore: { userId },
+  } = useStores()
   const [baby, setBaby] = useState(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [amountError, setAmountError] = useState("")
@@ -35,6 +40,10 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
   const [rightTimerActive, setRightTimerActive] = useState(false)
   const [leftTimerSeconds, setLeftTimerSeconds] = useState(0)
   const [rightTimerSeconds, setRightTimerSeconds] = useState(0)
+  const [availablebreastMilkBottles, setAvailablebreastMilkBottles] = useState(0)
+  const [availableformulaMilkBottles, setAvailableformulaMilkBottles] = useState(0)
+  const [breastMilkId, setBreastMilkId] = useState(0)
+  const [formulaMilkId, setFormulaMilkId] = useState(0)
   const leftTimerRef = useRef(null)
   const rightTimerRef = useRef(null)
   const startTimeRef = useRef(null)
@@ -47,6 +56,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
     amount: "",
     startTime: null,
     endTime: null,
+    duration: "",
   })
 
   useEffect(() => {
@@ -62,6 +72,38 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (userId) {
+      loadInventoryItems()
+    }
+  }, [userId])
+
+  const loadInventoryItems = async () => {
+    try {
+      await inventoryStore.fetchInventory(userId)
+      const breastMilkBottles = inventoryStore.inventoryForList
+        .filter(
+          (item) => item.item === "Milk" && item.quantity > 0 && item.category === "Breast Milk",
+        )
+        .map((item) => getSnapshot(item))
+
+      console.log("breastMilkBottles available:", breastMilkBottles[0]?.quantity)
+      setAvailablebreastMilkBottles(breastMilkBottles[0]?.quantity)
+      setBreastMilkId(breastMilkBottles[0]?.id)
+      const formulaMilkBottles = inventoryStore.inventoryForList
+        .filter(
+          (item) => item.item === "Milk" && item.quantity > 0 && item.category === "Formula Milk",
+        )
+        .map((item) => getSnapshot(item))
+
+      console.log("formulaMilkBottles available:", formulaMilkBottles[0]?.quantity)
+      setAvailableformulaMilkBottles(formulaMilkBottles[0]?.quantity)
+      setFormulaMilkId(formulaMilkBottles[0]?.id)
+    } catch (error) {
+      console.error("Error loading inventory:", error)
+    }
+  }
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible)
@@ -144,7 +186,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
     clearInterval(leftTimerRef.current)
     leftTimerRef.current = null
     setLeftTimerActive(false)
-    
+
     const duration = Math.ceil(leftTimerSeconds / 60)
     setFormData((prev) => ({
       ...prev,
@@ -193,7 +235,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
     clearInterval(rightTimerRef.current)
     rightTimerRef.current = null
     setRightTimerActive(false)
-    
+
     const duration = Math.ceil(rightTimerSeconds / 60)
     setFormData((prev) => ({
       ...prev,
@@ -248,15 +290,47 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
       return
     }
 
+    const feedAmount = Number(formData?.amount)
+    const selectedCategory = formData.bottleType === "formula" ? "Formula Milk" : "Breast Milk"
+    let newAmount = 0
+    let itemId = 0
+    if (selectedCategory === "Formula Milk") {
+      newAmount = availableformulaMilkBottles - feedAmount
+      itemId = formulaMilkId
+    } else {
+      newAmount = availablebreastMilkBottles - feedAmount 
+      itemId = breastMilkId
+    }
+    console.log("newAmount:", newAmount)
+    if (
+      formData.feedType === "bottle" &&
+      formData.bottleType === "formula" &&
+      availableformulaMilkBottles < feedAmount
+    ) {
+      setAmountError(
+        `Not enough formula milk. You need ${feedAmount} mL, but only ${availableformulaMilkBottles} mL available.`,
+      )
+      return
+    }
+
+    if (
+      formData.feedType === "bottle" &&
+      formData.bottleType === "breastmilk" &&
+      availablebreastMilkBottles < feedAmount
+    ) {
+      setAmountError(
+        `Not enough breast milk. You need ${feedAmount} mL, but only ${availablebreastMilkBottles} mL available.`,
+      )
+      return
+    }
+
     // Prepare data for submission
     const submissionData = {
       ...formData,
       // Format feed type for backend
-      feedType: formData.feedType === "bottle" 
-        ? `bottle:${formData.bottleType}` 
-        : "breastfeeding",
+      feedType: formData.feedType === "bottle" ? `bottle:${formData.bottleType}` : "breastfeeding",
       // Total duration is sum of left and right
-      duration: getTotalDuration().toString(),
+      duration: formData.feedType === "bottle" ? formData.duration : getTotalDuration().toString(),
     }
 
     try {
@@ -280,6 +354,13 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
         // Refresh baby data
         childStore.getChildById(parseInt(babyId))
         setBaby(childStore.getChildById(parseInt(babyId)))
+
+        const item = {
+          name: "Milk",
+          quantity: newAmount,
+          category: selectedCategory,
+        }
+          await inventoryStore.updateItem(itemId, item)
       } else {
         const errorData = await response.json()
         Toast.show({
@@ -398,7 +479,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
                   {feedTypeInfo.sub && <Text style={$feedSubType}>{feedTypeInfo.sub}</Text>}
                   <Text style={$feedDuration}>{feed.durationMins} minutes</Text>
                   {feed.quantityMl > 0 && (
-                    <Text style={$feedAmount}>{(feed.quantityMl / 29.57).toFixed(2)} ml</Text>
+                    <Text style={$feedAmount}>{feed.quantityMl.toFixed(2)} ml</Text>
                   )}
                 </View>
               </View>
@@ -455,18 +536,18 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
                       <Text style={$breastLabel}>Left Breast</Text>
                       <Text style={$timerText}>{formatTimerDisplay(leftTimerSeconds)}</Text>
                     </View>
-                    
+
                     <View style={$iconButtonsContainer}>
                       <TouchableOpacity
                         style={[
                           $iconButton,
-                          leftTimerActive ? $timerButtonActive : $timerButtonInactive
+                          leftTimerActive ? $timerButtonActive : $timerButtonInactive,
                         ]}
                         onPress={leftTimerActive ? stopLeftTimer : startLeftTimer}
                       >
                         <Text style={$iconButtonText}>L</Text>
                       </TouchableOpacity>
-                      
+
                       <TextInput
                         style={$durationInput}
                         value={formData.leftDuration?.toString()}
@@ -491,18 +572,18 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
                       <Text style={$breastLabel}>Right Breast</Text>
                       <Text style={$timerText}>{formatTimerDisplay(rightTimerSeconds)}</Text>
                     </View>
-                    
+
                     <View style={$iconButtonsContainer}>
                       <TouchableOpacity
                         style={[
                           $iconButton,
-                          rightTimerActive ? $timerButtonActive : $timerButtonInactive
+                          rightTimerActive ? $timerButtonActive : $timerButtonInactive,
                         ]}
                         onPress={rightTimerActive ? stopRightTimer : startRightTimer}
                       >
                         <Text style={$iconButtonText}>R</Text>
                       </TouchableOpacity>
-                      
+
                       <TextInput
                         style={$durationInput}
                         value={formData.rightDuration?.toString()}
@@ -523,12 +604,10 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
                 </View>
 
                 {durationError ? <Text style={$errorText}>{durationError}</Text> : null}
-                
+
                 <View style={$totalDurationContainer}>
                   <Text style={$totalDurationLabel}>Total Feeding Time:</Text>
-                  <Text style={$totalDurationValue}>
-                    {formatDuration(getTotalDuration())}
-                  </Text>
+                  <Text style={$totalDurationValue}>{formatDuration(getTotalDuration())}</Text>
                 </View>
               </View>
             )}
@@ -536,6 +615,22 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
             {/* Amount Input - only show for bottle feeding */}
             {formData.feedType === "bottle" && (
               <>
+                <Text style={$inputLabel}>Duration:</Text>
+                <TextInput
+                  style={$input}
+                  value={formData.duration?.toString()}
+                  onChangeText={(value) => {
+                    if (/^\d*$/.test(value)) {
+                      setDurationError("")
+                      handleChange("duration", value)
+                    } else {
+                      setDurationError("Please enter a valid number")
+                    }
+                  }}
+                  placeholder="Duration (mins)"
+                  keyboardType="numeric"
+                />
+                {durationError ? <Text style={$errorText}>{durationError}</Text> : null}
                 <Text style={$inputLabel}>Amount (ml):</Text>
                 <TextInput
                   style={$input}
@@ -560,12 +655,12 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
               <Button
                 disabled={
                   (formData.feedType === "breastfeeding" && getTotalDuration() === 0) ||
-                  (formData.feedType === "bottle" && !formData.amount)
+                  (formData.feedType === "bottle" && (!formData.amount || !formData.duration))
                 }
                 style={[
                   $button,
                   ((formData.feedType === "breastfeeding" && getTotalDuration() === 0) ||
-                    (formData.feedType === "bottle" && !formData.amount)) &&
+                    (formData.feedType === "bottle" && (!formData.amount || !formData.duration))) &&
                     $disabledButton,
                 ]}
                 onPress={handleSaveFeed}
@@ -805,7 +900,7 @@ const $breastTimersContainer: ViewStyle = {
 }
 
 const $breastTimerCard: ViewStyle = {
-  width: "48%",  // Nearly half width to fit side by side
+  width: "48%", // Nearly half width to fit side by side
   backgroundColor: "#F0F7FF",
   borderRadius: 8,
   padding: 12,
@@ -841,11 +936,11 @@ const $iconButton: ViewStyle = {
 }
 
 const $timerButtonActive: ViewStyle = {
-  backgroundColor: "#EF4444",  // Red when active
+  backgroundColor: "#EF4444", // Red when active
 }
 
 const $timerButtonInactive: ViewStyle = {
-  backgroundColor: "#3B82F6",  // Blue when inactive
+  backgroundColor: "#3B82F6", // Blue when inactive
 }
 
 const $iconButtonText: TextStyle = {
@@ -861,7 +956,6 @@ const $durationInput: ViewStyle = {
   borderRadius: 4,
   padding: 4,
   backgroundColor: "white",
-  textAlign: "center",
 }
 
 const $durationLabel: TextStyle = {

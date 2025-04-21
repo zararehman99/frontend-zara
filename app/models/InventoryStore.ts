@@ -106,7 +106,38 @@ export const InventoryStoreModel = types
         })
       }
     }),
-  }))
+
+  updateItem: flow(function* (itemId: number, updatedItem: { name: string; quantity: number; category: string }) {
+    try {
+      const response = yield fetch(
+        `${configDev.VITE_LATCH_BACKEND_URL}/api/users/inventory/update/${itemId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedItem),
+        }
+      )
+      if (response.ok) {
+        Toast.show({
+          type: "success",
+          text1: "Item updated successfully",
+        })
+      } else {
+        const errorData = yield response.json()
+        Toast.show({
+          type: "error",
+          text1: errorData.message || "Failed to update item.",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating item:", error)
+      Toast.show({
+        type: "error",
+        text1: "Network error while updating item.",
+      })
+    }
+  })
+}))
   .views((store) => ({
     get inventoryForList() {
       return store.inventory
