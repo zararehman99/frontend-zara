@@ -46,8 +46,8 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
         const babiesWithData = snapshot.map(baby => ({
           ...baby,
           sleepData: generateSleepData(baby.sleepLogs, timeframe),
-          feedingData: generateFeedingData(baby.feedLogs, timeframe),
-          healthData: generateHealthData(baby.healthLogs, timeframe),
+          feedingData: generateFeedingData(baby.feeds, timeframe),
+          // healthData: generateHealthData(baby.healthLogs, timeframe),
         }))
         
         setBabyData(babiesWithData)
@@ -197,31 +197,31 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
     }
   }
 
-  // Health data (weight/growth) processing
-  const generateHealthData = (healthLogs, timeframe) => {
-    const labels = getLabels(timeframe)
+  // // Health data (weight/growth) processing
+  // const generateHealthData = (healthLogs, timeframe) => {
+  //   const labels = getLabels(timeframe)
     
-    // Start with the baby's initial weight
-    let weight = selectedBaby ? selectedBaby.weight : 7.5
+  //   // Start with the baby's initial weight
+  //   let weight = selectedBaby ? selectedBaby.weight : 7.5
     
-    // Create a simple growth progression
-    const data = labels.map((_, index) => {
-      // Small weight gain based on index
-      return parseFloat((weight + (index * 0.2)).toFixed(1))
-    })
+  //   // Create a simple growth progression
+  //   const data = labels.map((_, index) => {
+  //     // Small weight gain based on index
+  //     return parseFloat((weight + (index * 0.2)).toFixed(1))
+  //   })
     
-    return {
-      labels,
-      datasets: [
-        {
-          data,
-          color: (opacity = 1) => `rgba(255, 105, 180, ${opacity})`, // Hot pink
-          strokeWidth: 2,
-        },
-      ],
-      legend: ["Weight (lbs)"],
-    }
-  }
+  //   return {
+  //     labels,
+  //     datasets: [
+  //       {
+  //         data,
+  //         color: (opacity = 1) => `rgba(255, 105, 180, ${opacity})`, // Hot pink
+  //         strokeWidth: 2,
+  //       },
+  //     ],
+  //     legend: ["Weight (lbs)"],
+  //   }
+  // }
 
   const chartConfig = {
     backgroundGradientFrom: "#f3e5f5",
@@ -357,7 +357,7 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                       }}
                       style={$chart}
                     />
-                    {(!selectedBaby.feedLogs || selectedBaby.feedLogs.length === 0) && (
+                    {(!selectedBaby.feeds || selectedBaby.feeds.length === 0) && (
                       <Text style={$noDataText}>No feeding data available</Text>
                     )}
                   </View>
