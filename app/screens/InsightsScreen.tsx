@@ -363,7 +363,7 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                   </View>
 
                   {/* Growth Chart */}
-                  <View style={$chartCard}>
+                  {/* <View style={$chartCard}>
                     <Text style={$chartTitle}>Weight Progress</Text>
                     <Text style={$chartSubtitle}>Weight in lbs</Text>
                     <LineChart
@@ -380,7 +380,7 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                     <Text style={$warningText}>
                       *Weight is estimated based on initial weight of {selectedBaby.weight} lbs
                     </Text>
-                  </View>
+                  </View> */}
                 </View>
               )}
             </>
