@@ -12,10 +12,11 @@ import {
 import { Screen, Button } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { useStores } from "@/models"
-import configDev from "@/config/config.dev"
 import Toast from "react-native-toast-message"
 import { LineChart, BarChart } from "react-native-chart-kit"
 import { Dimensions } from "react-native"
+import { getSnapshot } from "mobx-state-tree"
+import { format, parseISO, startOfDay, differenceInDays } from "date-fns"
 
 interface InsightsScreenProps extends AppStackScreenProps<"Insights"> {}
 
@@ -24,6 +25,7 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
 }) {
   const {
     authenticationStore: { userId },
+    childStore
   } = useStores()
   const [babyData, setBabyData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -36,39 +38,25 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
     try {
       setLoading(true)
       // First, get the babies
-      const response = await fetch(
-        `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/get-babies/${userId}`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        },
-      )
-
-      if (response.ok) {
-        const babies = await response.json()
-
-        // For now, using mock data for insights
-        // In a real app, you would fetch actual tracking data for each baby
-        const babiesWithData = babies.map((baby) => ({
+      await childStore.fetchChildren(userId)
+      const snapshot = getSnapshot(childStore.childrenForList)
+      console.log("babyData snapshot", snapshot)
+      
+      if (snapshot && snapshot.length > 0) {
+        // Transform the data to include the tracking data
+        const babiesWithData = snapshot.map(baby => ({
           ...baby,
-          sleepData: generateMockSleepData(timeframe),
-          feedingData: generateMockFeedingData(timeframe),
-          growthData: generateMockGrowthData(timeframe),
+          sleepData: generateSleepData(baby.sleepLogs, timeframe),
+          feedingData: generateFeedingData(baby.feedLogs, timeframe),
+          healthData: generateHealthData(baby.healthLogs, timeframe),
         }))
-
+        
         setBabyData(babiesWithData)
-
-        // Set the first baby as selected by default
+        
+        // Set the first baby as selected by default if none selected
         if (babiesWithData.length > 0 && !selectedBaby) {
           setSelectedBaby(babiesWithData[0])
         }
-      } else {
-        const errorData = await response.json()
-        Toast.show({
-          type: "error",
-          text1: errorData.message || "Failed to load baby data",
-          position: "top",
-        })
       }
     } catch (error) {
       console.log("error", error)
@@ -86,20 +74,72 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
     fetchBabyData()
   }, [timeframe])
 
-  // Mock data generators
-  const generateMockSleepData = (period) => {
-    const labels =
-      period === "week"
-        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        : period === "month"
-          ? ["Week 1", "Week 2", "Week 3", "Week 4"]
-          : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+  // Get labels based on timeframe
+  const getLabels = (timeframe) => {
+    const today = new Date()
+    
+    if (timeframe === "week") {
+      // Last 7 days
+      return [...Array(7)].map((_, i) => {
+        const d = new Date()
+        d.setDate(d.getDate() - (6 - i))
+        return format(d, "EEE")
+      })
+    } else if (timeframe === "month") {
+      // Last 4 weeks
+      return ["Week 1", "Week 2", "Week 3", "Week 4"]
+    } else {
+      // Last 6 months
+      return [...Array(6)].map((_, i) => {
+        const d = new Date()
+        d.setMonth(d.getMonth() - (5 - i))
+        return format(d, "MMM")
+      })
+    }
+  }
 
+  // Sleep data processing
+  const generateSleepData = (sleepLogs, timeframe) => {
+    const labels = getLabels(timeframe)
+    const today = new Date()
+    
+    // Initialize data array with zeros
+    const data = new Array(labels.length).fill(0)
+    
+    if (sleepLogs && sleepLogs.length > 0) {
+      // Process logs based on timeframe
+      sleepLogs.forEach(log => {
+        const logDate = new Date(log.createdAt)
+        
+        if (timeframe === "week") {
+          const dayIndex = 6 - differenceInDays(today, startOfDay(logDate))
+          if (dayIndex >= 0 && dayIndex < 7) {
+            data[dayIndex] += log.durationMins / 60 // Convert minutes to hours
+          }
+        } else if (timeframe === "month") {
+          const dayDiff = differenceInDays(today, startOfDay(logDate))
+          if (dayDiff >= 0 && dayDiff < 28) {
+            const weekIndex = Math.floor(dayDiff / 7)
+            if (weekIndex < 4) {
+              data[3 - weekIndex] += log.durationMins / 60 // Convert minutes to hours
+            }
+          }
+        } else {
+          // Year (6 months)
+          const monthDiff = today.getMonth() - logDate.getMonth() + 
+            (today.getFullYear() - logDate.getFullYear()) * 12
+          if (monthDiff >= 0 && monthDiff < 6) {
+            data[5 - monthDiff] += log.durationMins / 60 // Convert minutes to hours
+          }
+        }
+      })
+    }
+    
     return {
       labels,
       datasets: [
         {
-          data: labels.map(() => Math.floor(Math.random() * 5) + 5), // Random sleep hours between 5-10
+          data: data.map(val => Math.max(val, 0)), // Ensure no negative values
           color: (opacity = 1) => `rgba(65, 105, 225, ${opacity})`, // Royal blue
           strokeWidth: 2,
         },
@@ -108,19 +148,48 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
     }
   }
 
-  const generateMockFeedingData = (period) => {
-    const labels =
-      period === "week"
-        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        : period === "month"
-          ? ["Week 1", "Week 2", "Week 3", "Week 4"]
-          : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-
+  // Feeding data processing
+  const generateFeedingData = (feedLogs, timeframe) => {
+    const labels = getLabels(timeframe)
+    const today = new Date()
+    
+    // Initialize data array with zeros
+    const data = new Array(labels.length).fill(0)
+    
+    if (feedLogs && feedLogs.length > 0) {
+      // Count feedings for each day/week/month
+      feedLogs.forEach(log => {
+        const logDate = new Date(log.feedTime || log.createdAt)
+        
+        if (timeframe === "week") {
+          const dayIndex = 6 - differenceInDays(today, startOfDay(logDate))
+          if (dayIndex >= 0 && dayIndex < 7) {
+            data[dayIndex]++
+          }
+        } else if (timeframe === "month") {
+          const dayDiff = differenceInDays(today, startOfDay(logDate))
+          if (dayDiff >= 0 && dayDiff < 28) {
+            const weekIndex = Math.floor(dayDiff / 7)
+            if (weekIndex < 4) {
+              data[3 - weekIndex]++
+            }
+          }
+        } else {
+          // Year (6 months)
+          const monthDiff = today.getMonth() - logDate.getMonth() + 
+            (today.getFullYear() - logDate.getFullYear()) * 12
+          if (monthDiff >= 0 && monthDiff < 6) {
+            data[5 - monthDiff]++
+          }
+        }
+      })
+    }
+    
     return {
       labels,
       datasets: [
         {
-          data: labels.map(() => Math.floor(Math.random() * 4) + 4), // Random feedings between 4-8
+          data: data,
           color: (opacity = 1) => `rgba(50, 205, 50, ${opacity})`, // Lime green
           strokeWidth: 2,
         },
@@ -129,24 +198,24 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
     }
   }
 
-  const generateMockGrowthData = (period) => {
-    const labels =
-      period === "week"
-        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        : period === "month"
-          ? ["Week 1", "Week 2", "Week 3", "Week 4"]
-          : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-
-    let startWeight = 7.5 // Starting weight in pounds
-
+  // Health data (weight/growth) processing
+  const generateHealthData = (healthLogs, timeframe) => {
+    const labels = getLabels(timeframe)
+    
+    // Start with the baby's initial weight
+    let weight = selectedBaby ? selectedBaby.weight : 7.5
+    
+    // Create a simple growth progression
+    const data = labels.map((_, index) => {
+      // Small weight gain based on index
+      return parseFloat((weight + (index * 0.2)).toFixed(1))
+    })
+    
     return {
       labels,
       datasets: [
         {
-          data: labels.map((_, index) => {
-            startWeight += Math.random() * 0.3 // Small weight gain
-            return parseFloat(startWeight.toFixed(1))
-          }),
+          data,
           color: (opacity = 1) => `rgba(255, 105, 180, ${opacity})`, // Hot pink
           strokeWidth: 2,
         },
@@ -167,12 +236,6 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
 
   return (
     <Screen preset="scroll" contentContainerStyle={$container}>
-      {/* <View style={$header}>
-        <Text style={$headerText}>Baby Insights</Text>
-        <TouchableOpacity style={$backButton} onPress={() => navigation.goBack()}>
-          <Text style={$backButtonText}>Back</Text>
-        </TouchableOpacity>
-      </View> */}
       <TouchableOpacity style={$backButton} onPress={() => navigation.goBack()}>
         <Text style={$backButtonText}>Back</Text>
       </TouchableOpacity>
@@ -267,6 +330,7 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                   {/* Sleep Chart */}
                   <View style={$chartCard}>
                     <Text style={$chartTitle}>Sleep Patterns</Text>
+                    <Text style={$chartSubtitle}>Hours of sleep</Text>
                     <LineChart
                       data={selectedBaby.sleepData}
                       width={screenWidth}
@@ -275,11 +339,15 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                       bezier
                       style={$chart}
                     />
+                    {selectedBaby.sleepLogs && selectedBaby.sleepLogs.length === 0 && (
+                      <Text style={$noDataText}>No sleep data available</Text>
+                    )}
                   </View>
 
                   {/* Feeding Chart */}
                   <View style={$chartCard}>
                     <Text style={$chartTitle}>Feeding Frequency</Text>
+                    <Text style={$chartSubtitle}>Number of feedings</Text>
                     <BarChart
                       data={selectedBaby.feedingData}
                       width={screenWidth}
@@ -290,13 +358,17 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                       }}
                       style={$chart}
                     />
+                    {(!selectedBaby.feedLogs || selectedBaby.feedLogs.length === 0) && (
+                      <Text style={$noDataText}>No feeding data available</Text>
+                    )}
                   </View>
 
                   {/* Growth Chart */}
                   <View style={$chartCard}>
                     <Text style={$chartTitle}>Weight Progress</Text>
+                    <Text style={$chartSubtitle}>Weight in lbs</Text>
                     <LineChart
-                      data={selectedBaby.growthData}
+                      data={selectedBaby.healthData}
                       width={screenWidth}
                       height={220}
                       chartConfig={{
@@ -306,6 +378,9 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                       bezier
                       style={$chart}
                     />
+                    <Text style={$warningText}>
+                      *Weight is estimated based on initial weight of {selectedBaby.weight} lbs
+                    </Text>
                   </View>
                 </View>
               )}
@@ -349,7 +424,6 @@ const $heading: TextStyle = {
 const $backButton: ViewStyle = {
   alignSelf: "flex-start",
   marginBottom: 10,
-  // backgroundColor: "rgba(255, 255, 255, 0.2)",
 }
 
 const $backButtonText: TextStyle = {
@@ -487,12 +561,34 @@ const $chartTitle: TextStyle = {
   fontSize: 18,
   fontWeight: "bold",
   textAlign: "center",
-  // marginBottom: 12,
   color: "#333",
+}
+
+const $chartSubtitle: TextStyle = {
+  fontSize: 14,
+  textAlign: "center",
+  color: "#666",
+  marginBottom: 8,
 }
 
 const $chart: ViewStyle = {
   borderRadius: 8,
   marginVertical: 8,
   padding: 16,
+}
+
+const $noDataText: TextStyle = {
+  textAlign: "center",
+  fontSize: 14,
+  color: "#666",
+  fontStyle: "italic",
+  marginTop: 10,
+}
+
+const $warningText: TextStyle = {
+  textAlign: "center",
+  fontSize: 12,
+  color: "#666",
+  fontStyle: "italic",
+  marginTop: 5,
 }
