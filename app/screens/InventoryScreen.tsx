@@ -13,7 +13,6 @@ import { AppStackScreenProps } from "../navigators"
 import { Screen } from "@/components"
 import { useStores } from "@/models"
 import Toast from "react-native-toast-message"
-import configDev from "@/config/config.dev"
 import { Picker } from "@react-native-picker/picker"
 
 interface InventoryItem {
@@ -29,41 +28,21 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
   navigation,
 }) {
   const {
+    inventoryStore,
     authenticationStore: { userId },
   } = useStores()
 
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [quantity, setQuantity] = useState("")
   const [selectedItem, setSelectedItem] = useState("Milk")
   const [selectedCategory, setSelectedCategory] = useState("")
   const [quantityError, setQuantityError] = useState(false)
   const [categoryError, setCategoryError] = useState(false)
-  const [loading, setLoading] = useState(true)
   const itemCategoryOptions: Record<string, string[]> = {
-    Milk: ["Frozen", "Liquid"],
+    Milk: ["Breast Milk", "Formula Milk"],
     Nappy: ["Size 1", "Size 2", "Size 3", "Size 4"],
     // Nappy: ["1", "2", "3", "4"],
     Wipes: ["Wet", "Dry"],
     Bottle: ["Plastic", "Glass"],
-  }
-
-  const fetchInventory = async () => {
-    try {
-      const res = await fetch(
-        `${configDev.VITE_LATCH_BACKEND_URL}/api/users/inventory/get/${userId}`,
-      )
-      const data = await res.json()
-      setInventory(data)
-      setLoading(false)
-    } catch (err) {
-      Toast.show({
-        type: "error",
-        text1: "Failed to load inventory",
-        position: "top",
-      })
-      console.error("Error fetching inventory", err)
-      setLoading(false)
-    }
   }
 
   const handleAddItem = async () => {
@@ -83,58 +62,20 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
       quantity: Number(quantity),
       category: selectedCategory,
     }
-
-    try {
-      const response = await fetch(
-        `${configDev.VITE_LATCH_BACKEND_URL}/api/users/inventory/add/${userId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(item),
-        },
-      )
-
-      if (response.ok) {
-        Toast.show({ type: "success", text1: "Item added successfully!" })
-        setQuantity("")
-        setSelectedItem("Milk")
-        setSelectedCategory("")
-        setCategoryError(false)
-        setQuantityError(false)
-        fetchInventory()
-      } else {
-        const errorData = await response.json()
-        Toast.show({ type: "error", text1: errorData.message || "Something went wrong." })
-      }
-    } catch {
-      Toast.show({ type: "error", text1: "Failed to add item" })
-    }
+      await inventoryStore.addItem(userId, item)
+      inventoryStore.fetchInventory(userId)
   }
 
   const handleDeleteItem = async (itemId: string) => {
-    try {
-      const response = await fetch(
-        `${configDev.VITE_LATCH_BACKEND_URL}/api/users/inventory/delete/${itemId}`,
-        {
-          method: "DELETE",
-        },
-      )
-
-      if (response.ok) {
-        Toast.show({ type: "success", text1: "Item deleted successfully!" })
-        fetchInventory()
-      } else {
-        const errorData = await response.json()
-        Toast.show({ type: "error", text1: errorData.message || "Failed to delete item." })
-      }
-    } catch {
-      Toast.show({ type: "error", text1: "Network error while deleting item." })
-    }
+      await inventoryStore.deleteItem(userId, Number(itemId))
+      inventoryStore.fetchInventory(userId)
   }
 
   useEffect(() => {
-    fetchInventory()
-  }, [])
+    if (userId) {
+      inventoryStore.fetchInventory(userId)
+    }
+  }, [userId])
 
   const renderItem = ({ item }: { item: InventoryItem }) => (
     <View style={$itemCard}>
@@ -196,7 +137,6 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
             style={[$radioButton, selectedCategory === cat && $radioButtonSelected]}
             onPress={() => {
               setSelectedCategory(cat)
-              console.log("CATEGORY", cat)
               setCategoryError(false)
             }}
           >
@@ -208,13 +148,16 @@ export const InventoryScreen: FC<InventoryScreenProps> = observer(function Inven
       <TouchableOpacity style={$saveButton} onPress={handleAddItem}>
         <Text style={$saveButtonText}>+ Add Item</Text>
       </TouchableOpacity>
-      {loading ? (
+      {inventoryStore.loading ? (
         <View style={$loaderWrapper}>
           <Text style={$loaderText}>Loading Inventory...</Text>
         </View>
       ) : (
         <FlatList
-          data={inventory}
+          data={inventoryStore.inventoryForList.map((item) => ({
+            ...item, // Spread the entire object
+            id: String(item.id), // Convert `id` to string for FlatList compatibility
+          }))}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           style={$flatListStyle}
