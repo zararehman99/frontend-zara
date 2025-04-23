@@ -50,7 +50,6 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
 
     const handleSubmit = async () => {
       setLoading(true)
-      console.log("formData", formData)
       // Validate form fields
       const missingFields: string[] = []
 

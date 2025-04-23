@@ -86,10 +86,8 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
       }
 
       const data = await response.json()
-      console.log("Data.User", data.user)
       if (data.user) {
         const userID = data.user.id
-        console.log("User ID", userID)
         setUserId(userID.toString())
         setUserName(data.user.firstName)
       }
@@ -97,7 +95,6 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
         setAuthToken(data.token)
         setAuthEmail("")
         setAuthPassword("")
-        console.log("Login Successful")
         Toast.show({
           type: "success",
           text1: "Login Successful",

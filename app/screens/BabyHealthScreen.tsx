@@ -44,19 +44,16 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
       // Make sure this is getting the latest value from the store
       const currentBaby = childStore.getChildById(parseInt(babyId))
       setBaby(currentBaby)
-      console.log("Baby data:", currentBaby)
 
       if (currentBaby?.sleepLogs && currentBaby.sleepLogs.length > 0) {
         const sortedSleepData = [...currentBaby.sleepLogs].sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
         )
-        console.log("Sorted sleep data:", sortedSleepData)
         setLastSleep(sortedSleepData[0])
       }
     }, [babyId])
 
     const handleSaveSleepLog = async () => {
-      console.log("sleep form data", sleepFormData)
       try {
         const response = await fetch(
           `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/sleep-log`,
@@ -89,7 +86,6 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
       }
     }
     const handleSaveHealthLog = async () => {
-      console.log("sleep form data", healthFormData)
       try {
         const response = await fetch(
           `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/health-log`,

@@ -40,7 +40,6 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
       // First, get the babies
       await childStore.fetchChildren(userId)
       const snapshot = getSnapshot(childStore.childrenForList)
-      console.log("babyData snapshot", snapshot)
       
       if (snapshot && snapshot.length > 0) {
         // Transform the data to include the tracking data

@@ -33,7 +33,6 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
 
     const handleSubmit = async () => {
       setLoading(true)
-      console.log("formData", formData)
       try {
         const response = await fetch(`${configDev.VITE_LATCH_BACKEND_URL}/api/users/register`, {
           method: "POST",

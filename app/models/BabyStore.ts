@@ -43,7 +43,6 @@ export const ChildStoreModel = types
         )
         if (response.ok) {
           const data = yield response.json()
-          console.log("DATA", data)
           store.setProp("children", data) // Update store with fetched data
         } else {
           const errorData = yield response.json()
