@@ -88,7 +88,6 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
         )
         .map((item) => getSnapshot(item))
 
-      console.log("breastMilkBottles available:", breastMilkBottles[0]?.quantity)
       setAvailablebreastMilkBottles(breastMilkBottles[0]?.quantity)
       setBreastMilkId(breastMilkBottles[0]?.id)
       const formulaMilkBottles = inventoryStore.inventoryForList
@@ -97,7 +96,6 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
         )
         .map((item) => getSnapshot(item))
 
-      console.log("formulaMilkBottles available:", formulaMilkBottles[0]?.quantity)
       setAvailableformulaMilkBottles(formulaMilkBottles[0]?.quantity)
       setFormulaMilkId(formulaMilkBottles[0]?.id)
     } catch (error) {
@@ -301,7 +299,6 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
       newAmount = availablebreastMilkBottles - feedAmount 
       itemId = breastMilkId
     }
-    console.log("newAmount:", newAmount)
     if (
       formData.feedType === "bottle" &&
       formData.bottleType === "formula" &&

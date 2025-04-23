@@ -36,19 +36,16 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
   useEffect(() => {
     const currentBaby = childStore.getChildById(parseInt(babyId))
     setBaby(currentBaby)
-    console.log("Baby data:", currentBaby)
 
     if (currentBaby?.pumpSessions && currentBaby.pumpSessions.length > 0) {
       const sortedSessions = [...currentBaby.pumpSessions].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
       )
-      console.log("Sorted session data:", sortedSessions)
       setLastSession(sortedSessions[0])
     }
   }, [babyId])
 
   const handleSavePumpSession = async () => {
-    console.log("pump session form data", sessionFormData)
     try {
       const response = await fetch(
         `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/pump-session`,
@@ -82,7 +79,6 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
   }
 
   const handleSaveInventory = async () => {
-    console.log("inventory form data", inventoryFormData)
     try {
       const response = await fetch(
         `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/inventory`,

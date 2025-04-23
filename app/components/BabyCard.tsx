@@ -5,7 +5,6 @@ import { useNavigation } from "@react-navigation/native"
 import { formatAge } from "@/utils/dateUtils"
 
 const BabyProfileCard = ({ baby }) => {
-  console.log("BABY", baby)
   const navigation = useNavigation()
 
   return (

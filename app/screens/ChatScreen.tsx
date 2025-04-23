@@ -51,7 +51,6 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
   const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
 
   const sendMessage = () => {
-    console.log("Sending message:", messageText)
     if (messageText.trim() === "") return
 
     // Add user message

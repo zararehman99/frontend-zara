@@ -32,7 +32,6 @@ export const HomeScreen: FC<HomeScreenProps> = observer(function HomeScreen({ na
     )
     if (response.ok) {
       const data = await response.json()
-      console.log("data", data)
       setBaby(data)
     } else {
       const errorData = await response.json()
