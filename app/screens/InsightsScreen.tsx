@@ -197,32 +197,6 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
     }
   }
 
-  // // Health data (weight/growth) processing
-  // const generateHealthData = (healthLogs, timeframe) => {
-  //   const labels = getLabels(timeframe)
-    
-  //   // Start with the baby's initial weight
-  //   let weight = selectedBaby ? selectedBaby.weight : 7.5
-    
-  //   // Create a simple growth progression
-  //   const data = labels.map((_, index) => {
-  //     // Small weight gain based on index
-  //     return parseFloat((weight + (index * 0.2)).toFixed(1))
-  //   })
-    
-  //   return {
-  //     labels,
-  //     datasets: [
-  //       {
-  //         data,
-  //         color: (opacity = 1) => `rgba(255, 105, 180, ${opacity})`, // Hot pink
-  //         strokeWidth: 2,
-  //       },
-  //     ],
-  //     legend: ["Weight (lbs)"],
-  //   }
-  // }
-
   const chartConfig = {
     backgroundGradientFrom: "#f3e5f5",
     backgroundGradientTo: "#f3e5f5",
@@ -361,26 +335,6 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                       <Text style={$noDataText}>No feeding data available</Text>
                     )}
                   </View>
-
-                  {/* Growth Chart */}
-                  {/* <View style={$chartCard}>
-                    <Text style={$chartTitle}>Weight Progress</Text>
-                    <Text style={$chartSubtitle}>Weight in lbs</Text>
-                    <LineChart
-                      data={selectedBaby.healthData}
-                      width={screenWidth}
-                      height={220}
-                      chartConfig={{
-                        ...chartConfig,
-                        color: (opacity = 1) => `rgba(255, 105, 180, ${opacity})`,
-                      }}
-                      bezier
-                      style={$chart}
-                    />
-                    <Text style={$warningText}>
-                      *Weight is estimated based on initial weight of {selectedBaby.weight} lbs
-                    </Text>
-                  </View> */}
                 </View>
               )}
             </>
