@@ -20,6 +20,7 @@ export const ChildModel = types.model("Child", {
   healthLogs: types.array(types.frozen()), // assuming it's a complex data structure
   feeds: types.array(types.frozen()), // assuming it's a complex data structure
   sleepLogs: types.array(types.frozen()),
+  tushLogs: types.array(types.frozen()),
 })
 
 // Define the ChildStore model
