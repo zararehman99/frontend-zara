@@ -28,9 +28,9 @@ export const BabyInfoScreen: FC<BabyInfoScreenProps> = observer(function BabyInf
     navigation.navigate("Pump", { babyId: babyId })
   }
 
-  // function goToBabyWellnessTracker() {
-  //   navigation.navigate("TinyTushTracker", { babyId: babyId })
-  // }
+  function goToBabyWellnessTracker() {
+    navigation.navigate("TinyTushTracker", { babyId: babyId })
+  }
   const $topContainerInsets = useSafeAreaInsetsStyle(["top"])
 
   return (
@@ -58,9 +58,9 @@ export const BabyInfoScreen: FC<BabyInfoScreenProps> = observer(function BabyInf
         <Button style={$button} textStyle={$buttonText} onPress={goToPump}>
           Pump
         </Button>
-        {/* <Button style={$button} textStyle={$buttonText} onPress={goToBabyWellnessTracker}>
-        Tiny Tush 
-        </Button> */}
+        <Button style={$button} textStyle={$buttonText} onPress={goToBabyWellnessTracker}>
+        Potty Tracker
+        </Button>
         <Button style={$aiButton} textStyle={$buttonText} onPress={goNext}>
           AI Assistant
         </Button>
