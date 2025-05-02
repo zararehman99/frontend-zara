@@ -1,5 +1,5 @@
 import { observer } from "mobx-react-lite"
-import { FC, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import {
   FlatList,
   TextInput,
@@ -15,26 +15,34 @@ import { $styles, type ThemedStyle } from "@/theme"
 import { useHeader } from "../utils/useHeader"
 import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
 import { useAppTheme } from "@/utils/useAppTheme"
+import configDev from "@/config/config.dev"
+import { useStores } from "@/models"
+import { getSnapshot } from "mobx-state-tree"
 
-interface Message {
-  id: string
-  text: string
-  isUser: boolean
-  timestamp: Date
+export interface Message {
+  type: "user" | "assistant";
+  content: string;
+  timestamp?: Date;
 }
 
 interface ChatScreenProps extends AppStackScreenProps<"Chat"> {}
 
 export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_props) {
   const { themed, theme } = useAppTheme()
+  const {
+      authenticationStore: { userId },
+      childStore
+    } = useStores()
+  const [threadId, setThreadId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "1",
-      text: "Hello! How can I assist you today?",
-      isUser: false,
+      // id: "1",
+      content: "Hello! How can I assist you today?",
+      type: "assistant",
       timestamp: new Date(),
     },
   ])
+  const [babiesData, setBabiesData] = useState([])
   const [messageText, setMessageText] = useState("")
 
   const { navigation } = _props
@@ -48,46 +56,220 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
     [navigation],
   )
 
+  const getAssistant = async () => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+  
+      const response = await fetch(
+        `${configDev.VITE_LATCH_BACKEND_URL}/api/langgraph/assistants/${configDev.VITE_LATCH_URL}`,
+        {
+          method: "GET",
+          headers,
+        }
+      );
+  
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  
+      const data = await response.json();
+      // console.log("response", data);
+    } catch (error) {
+      console.error("Error fetching assistant:", error);
+    }
+  };
+  
+  const createThread = async () => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+  
+      const thread_id = crypto.randomUUID();
+      const obj = {
+        thread_id: thread_id,
+        if_exists: "raise",
+      };
+  
+      const response = await fetch(
+        `${configDev.VITE_LATCH_BACKEND_URL}/api/langgraph/threads`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(obj),
+        }
+      );
+  
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  
+      const data = await response.json();
+      setThreadId(data.thread_id);
+      // console.log("response", data);
+      return data.thread_id;
+    } catch (error) {
+      console.error("Error creating thread:", error);
+    }
+  };  
+
+   const fetchBabyData = async () => {
+      try {
+        await childStore.fetchChildren(userId)
+        const snapshot = getSnapshot(childStore.childrenForList)
+        setBabiesData(snapshot)
+      } catch (error) {
+        console.log("error", error)
+      }
+    }
+
+  useEffect(() => {
+    getAssistant();
+    createThread();
+    fetchBabyData();
+  }, []);
+
+  const streamRun = async (threadId: string, options: any) => {
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    const response = await fetch(
+      `${configDev.VITE_LATCH_BACKEND_URL}/api/langgraph/threads/${threadId}/runs/stream`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(options),
+      }
+    );
+
+    if (!response.body) {
+      throw new Error("Readable stream not supported or response body is null");
+    }
+
+    return new ReadableStream({
+      start: (controller) => {
+        console.log("Stream started");
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+
+        let isFirstChunk = true; // Flag to track if it's the first chunk
+
+        const push = () => {
+          reader.read().then(({ done, value }) => {
+            if (done) {
+              console.log("Stream closed");
+              controller.close();
+              return;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            const parts = chunk.split("event:").filter((part) => part.trim());
+
+            parts.forEach((part) => {
+              try {
+                const jsonPart = part.trim();
+                if (jsonPart.includes("messages/metadata")) {
+                  console.log("Skipping metadata part");
+                  return;
+                }
+
+                const jsonParts = jsonPart
+                  .split("messages/partial")
+                  .filter((part) => part.trim());
+                jsonParts.forEach((part) => {
+                  const cleanedString = part
+                    .split("data:")
+                    .filter((parts) => parts.trim());
+                  cleanedString.forEach((part) => {
+                    const jsonObject = JSON.parse(part);
+
+                    const lastAiMessage = jsonObject[0];
+                    const contentToStream = lastAiMessage.content;
+
+                    if (isFirstChunk) {
+                      // Initialize the first message
+                      const assistantMessage: Message = {
+                        type: "assistant",
+                        content: contentToStream, // Set the content
+                        timestamp: new Date(),
+                      };
+                      setMessages((prev) => [...prev, assistantMessage]);
+                      isFirstChunk = false;
+                    } else {
+                      const updatedContentToStream =contentToStream
+                      // Replace the content of the last message with the latest chunk
+                      setMessages((prev) => {
+                        const updatedMessages = [...prev];
+                        const lastMessageIndex = updatedMessages.length - 1;
+                        const lastMessage = updatedMessages[lastMessageIndex];
+                        updatedMessages[lastMessageIndex] = {
+                          ...lastMessage,
+                          content: updatedContentToStream, // Replace the content of the last message
+                        };
+                        return updatedMessages;
+                      });
+                    }
+                    // console.log("Streaming content:", contentToStream);
+                  });
+                });
+              } catch (error) {
+                console.error("Failed to parse chunk part as JSON:", error);
+              }
+            });
+
+            push();
+          });
+        };
+
+        push();
+      },
+    });
+  };
+
   const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (messageText.trim() === "") return
 
     // Add user message
     const userMessage: Message = {
-      id: Date.now().toString(),
-      text: messageText,
-      isUser: true,
+      content: messageText,
+      type: "user",
       timestamp: new Date(),
     }
 
+    const input = {
+      messages: [
+        {
+          role: "user",
+          content: messageText,
+        },
+      ],
+      baby_profiles: babiesData
+    };
+    const stream = {
+      assistant_id: configDev.VITE_LATCH_URL,
+      input: input,
+      stream_mode: ["messages"],
+    };
+
+    await streamRun(threadId, stream);
+
     setMessages((prevMessages) => [...prevMessages, userMessage])
     setMessageText("")
-
-    // Simulate AI response (in a real app, you would call your AI API here)
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "I'm your AI assistant. This is a simulated response. In a real app, this would come from your AI backend.",
-        isUser: false,
-        timestamp: new Date(),
-      }
-      setMessages((prevMessages) => [...prevMessages, aiResponse])
-    }, 1000)
   }
 
   const renderMessage = ({ item }: { item: Message }) => (
     <View
       style={[
         themed($messageContainer),
-        item.isUser ? themed($userMessage) : themed($assistantMessage),
+        item.type === "user" ? themed($userMessage) : themed($assistantMessage),
       ]}
     >
-      <Text style={item.isUser ? themed($userMessageText) : themed($assistantMessageText)}>
-        {item.text}
+      <Text style={item.type === "user" ? themed($userMessageText) : themed($assistantMessageText)}>
+        {item.content}
       </Text>
       <Text style={themed($timestampText)}>
-        {item.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        {item?.timestamp?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
       </Text>
     </View>
   )
@@ -101,7 +283,7 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
         <FlatList
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          // keyExtractor={(item) => item.id}
           style={$styles.flex1}
           contentContainerStyle={themed($chatListContent)}
           inverted={false}
