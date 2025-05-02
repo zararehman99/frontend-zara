@@ -20,9 +20,9 @@ import { useStores } from "@/models"
 import { getSnapshot } from "mobx-state-tree"
 
 export interface Message {
-  type: "user" | "assistant";
-  content: string;
-  timestamp?: Date;
+  type: "user" | "assistant"
+  content: string
+  timestamp?: Date
 }
 
 interface ChatScreenProps extends AppStackScreenProps<"Chat"> {}
@@ -30,10 +30,11 @@ interface ChatScreenProps extends AppStackScreenProps<"Chat"> {}
 export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_props) {
   const { themed, theme } = useAppTheme()
   const {
-      authenticationStore: { userId },
-      childStore
-    } = useStores()
-  const [threadId, setThreadId] = useState<string>("");
+    authenticationStore: { userId },
+    childStore,
+  } = useStores()
+  const [threadId, setThreadId] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(true)
   const [messages, setMessages] = useState<Message[]>([
     {
       // id: "1",
@@ -58,79 +59,78 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
 
   const getAssistant = async () => {
     try {
+      setIsLoading(true)
       const headers = {
         "Content-Type": "application/json",
-      };
-  
+      }
+
       const response = await fetch(
         `${configDev.VITE_LATCH_BACKEND_URL}/api/langgraph/assistants/${configDev.VITE_LATCH_URL}`,
         {
           method: "GET",
           headers,
-        }
-      );
-  
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  
-      const data = await response.json();
+        },
+      )
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+      const data = await response.json()
       // console.log("response", data);
     } catch (error) {
-      console.error("Error fetching assistant:", error);
+      console.error("Error fetching assistant:", error)
     }
-  };
-  
+  }
+
   const createThread = async () => {
     try {
       const headers = {
         "Content-Type": "application/json",
-      };
-  
-      const thread_id = crypto.randomUUID();
+      }
+
+      const thread_id = crypto.randomUUID()
       const obj = {
         thread_id: thread_id,
         if_exists: "raise",
-      };
-  
-      const response = await fetch(
-        `${configDev.VITE_LATCH_BACKEND_URL}/api/langgraph/threads`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify(obj),
-        }
-      );
-  
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  
-      const data = await response.json();
-      setThreadId(data.thread_id);
-      // console.log("response", data);
-      return data.thread_id;
-    } catch (error) {
-      console.error("Error creating thread:", error);
-    }
-  };  
-
-   const fetchBabyData = async () => {
-      try {
-        await childStore.fetchChildren(userId)
-        const snapshot = getSnapshot(childStore.childrenForList)
-        setBabiesData(snapshot)
-      } catch (error) {
-        console.log("error", error)
       }
+
+      const response = await fetch(`${configDev.VITE_LATCH_BACKEND_URL}/api/langgraph/threads`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(obj),
+      })
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+      const data = await response.json()
+      setThreadId(data.thread_id)
+      // console.log("response", data);
+      return data.thread_id
+    } catch (error) {
+      console.error("Error creating thread:", error)
     }
+  }
+
+  const fetchBabyData = async () => {
+    try {
+      await childStore.fetchChildren(userId)
+      const snapshot = getSnapshot(childStore.childrenForList)
+      setBabiesData(snapshot)
+      setIsLoading(false)
+    } catch (error) {
+      console.log("error", error)
+    }
+  }
 
   useEffect(() => {
-    getAssistant();
-    createThread();
-    fetchBabyData();
-  }, []);
+    getAssistant()
+    createThread()
+    fetchBabyData()
+  }, [])
 
   const streamRun = async (threadId: string, options: any) => {
     const headers = {
       "Content-Type": "application/json",
-    };
+    }
 
     const response = await fetch(
       `${configDev.VITE_LATCH_BACKEND_URL}/api/langgraph/threads/${threadId}/runs/stream`,
@@ -138,52 +138,48 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
         method: "POST",
         headers,
         body: JSON.stringify(options),
-      }
-    );
+      },
+    )
 
     if (!response.body) {
-      throw new Error("Readable stream not supported or response body is null");
+      throw new Error("Readable stream not supported or response body is null")
     }
 
     return new ReadableStream({
       start: (controller) => {
-        console.log("Stream started");
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
+        console.log("Stream started")
+        const reader = response.body!.getReader()
+        const decoder = new TextDecoder()
 
-        let isFirstChunk = true; // Flag to track if it's the first chunk
+        let isFirstChunk = true // Flag to track if it's the first chunk
 
         const push = () => {
           reader.read().then(({ done, value }) => {
             if (done) {
-              console.log("Stream closed");
-              controller.close();
-              return;
+              console.log("Stream closed")
+              controller.close()
+              return
             }
 
-            const chunk = decoder.decode(value, { stream: true });
-            const parts = chunk.split("event:").filter((part) => part.trim());
+            const chunk = decoder.decode(value, { stream: true })
+            const parts = chunk.split("event:").filter((part) => part.trim())
 
             parts.forEach((part) => {
               try {
-                const jsonPart = part.trim();
+                const jsonPart = part.trim()
                 if (jsonPart.includes("messages/metadata")) {
-                  console.log("Skipping metadata part");
-                  return;
+                  console.log("Skipping metadata part")
+                  return
                 }
 
-                const jsonParts = jsonPart
-                  .split("messages/partial")
-                  .filter((part) => part.trim());
+                const jsonParts = jsonPart.split("messages/partial").filter((part) => part.trim())
                 jsonParts.forEach((part) => {
-                  const cleanedString = part
-                    .split("data:")
-                    .filter((parts) => parts.trim());
+                  const cleanedString = part.split("data:").filter((parts) => parts.trim())
                   cleanedString.forEach((part) => {
-                    const jsonObject = JSON.parse(part);
+                    const jsonObject = JSON.parse(part)
 
-                    const lastAiMessage = jsonObject[0];
-                    const contentToStream = lastAiMessage.content;
+                    const lastAiMessage = jsonObject[0]
+                    const contentToStream = lastAiMessage.content
 
                     if (isFirstChunk) {
                       // Initialize the first message
@@ -191,39 +187,39 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
                         type: "assistant",
                         content: contentToStream, // Set the content
                         timestamp: new Date(),
-                      };
-                      setMessages((prev) => [...prev, assistantMessage]);
-                      isFirstChunk = false;
+                      }
+                      setMessages((prev) => [...prev, assistantMessage])
+                      isFirstChunk = false
                     } else {
-                      const updatedContentToStream =contentToStream
+                      const updatedContentToStream = contentToStream
                       // Replace the content of the last message with the latest chunk
                       setMessages((prev) => {
-                        const updatedMessages = [...prev];
-                        const lastMessageIndex = updatedMessages.length - 1;
-                        const lastMessage = updatedMessages[lastMessageIndex];
+                        const updatedMessages = [...prev]
+                        const lastMessageIndex = updatedMessages.length - 1
+                        const lastMessage = updatedMessages[lastMessageIndex]
                         updatedMessages[lastMessageIndex] = {
                           ...lastMessage,
                           content: updatedContentToStream, // Replace the content of the last message
-                        };
-                        return updatedMessages;
-                      });
+                        }
+                        return updatedMessages
+                      })
                     }
                     // console.log("Streaming content:", contentToStream);
-                  });
-                });
+                  })
+                })
               } catch (error) {
-                console.error("Failed to parse chunk part as JSON:", error);
+                console.error("Failed to parse chunk part as JSON:", error)
               }
-            });
+            })
 
-            push();
-          });
-        };
+            push()
+          })
+        }
 
-        push();
+        push()
       },
-    });
-  };
+    })
+  }
 
   const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
 
@@ -244,15 +240,15 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
           content: messageText,
         },
       ],
-      baby_profiles: babiesData
-    };
+      baby_profiles: babiesData,
+    }
     const stream = {
       assistant_id: configDev.VITE_LATCH_URL,
       input: input,
       stream_mode: ["messages"],
-    };
+    }
 
-    await streamRun(threadId, stream);
+    await streamRun(threadId, stream)
 
     setMessages((prevMessages) => [...prevMessages, userMessage])
     setMessageText("")
@@ -289,19 +285,30 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
           inverted={false}
         />
 
-        <View style={[themed($inputContainer), $bottomContainerInsets]}>
-          <TextInput
-            style={themed($textInput)}
-            value={messageText}
-            onChangeText={setMessageText}
-            placeholder="Type a message..."
-            placeholderTextColor={theme.colors.text}
-            multiline
-          />
-          <Button preset="default" onPress={sendMessage} style={themed($sendButton)}>
-            <Icon icon="caretRight" />
-          </Button>
-        </View>
+        {isLoading ? (
+          <View style={[$inputContainer, { justifyContent: "center", alignItems: "center", marginBottom: 20 }]}>
+            <Text>Loading assistant...</Text>
+          </View>
+        ) : (
+          <View style={[themed($inputContainer), $bottomContainerInsets]}>
+            <TextInput
+              style={themed($textInput)}
+              value={messageText}
+              onChangeText={setMessageText}
+              placeholder="Type a message..."
+              placeholderTextColor={theme.colors.text}
+              multiline
+              onKeyPress={({ nativeEvent }) => {
+                if (nativeEvent.key === "Enter" && !nativeEvent.shiftKey) {
+                  sendMessage()
+                }
+              }}
+            />
+            <Button preset="default" onPress={sendMessage} style={themed($sendButton)}>
+              <Icon icon="caretRight" />
+            </Button>
+          </View>
+        )}
       </Screen>
     </KeyboardAvoidingView>
   )
