@@ -40,13 +40,14 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
       // First, get the babies
       await childStore.fetchChildren(userId)
       const snapshot = getSnapshot(childStore.childrenForList)
-      
+      console.log("Babies with data", snapshot)
       if (snapshot && snapshot.length > 0) {
         // Transform the data to include the tracking data
         const babiesWithData = snapshot.map(baby => ({
           ...baby,
           sleepData: generateSleepData(baby.sleepLogs, timeframe),
           feedingData: generateFeedingData(baby.feeds, timeframe),
+          tushData: generateTushData(baby.tushLogs, timeframe),
           // healthData: generateHealthData(baby.healthLogs, timeframe),
         }))
         
@@ -197,6 +198,52 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
     }
   }
 
+  const generateTushData = (tushLogs, timeframe) => {
+    const labels = getLabels(timeframe)
+    const today = new Date()
+    const data = new Array(labels.length).fill(0)
+  
+    if (tushLogs && tushLogs.length > 0) {
+      tushLogs.forEach(log => {
+        const logDate = new Date(log.createdAt)
+  
+        if (timeframe === "week") {
+          const dayIndex = 6 - differenceInDays(today, startOfDay(logDate))
+          if (dayIndex >= 0 && dayIndex < 7) {
+            data[dayIndex]++
+          }
+        } else if (timeframe === "month") {
+          const dayDiff = differenceInDays(today, startOfDay(logDate))
+          if (dayDiff >= 0 && dayDiff < 28) {
+            const weekIndex = Math.floor(dayDiff / 7)
+            if (weekIndex < 4) {
+              data[3 - weekIndex]++
+            }
+          }
+        } else {
+          const monthDiff = today.getMonth() - logDate.getMonth() + 
+            (today.getFullYear() - logDate.getFullYear()) * 12
+          if (monthDiff >= 0 && monthDiff < 6) {
+            data[5 - monthDiff]++
+          }
+        }
+      })
+    }
+  
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          color: (opacity = 1) => `rgba(255, 165, 0, ${opacity})`, // Orange
+          strokeWidth: 2,
+        },
+      ],
+      legend: ["Tush Events"],
+    }
+  }
+  
+
   const chartConfig = {
     backgroundGradientFrom: "#f3e5f5",
     backgroundGradientTo: "#f3e5f5",
@@ -334,6 +381,16 @@ export const InsightsScreen: FC<InsightsScreenProps> = observer(function Insight
                     {(!selectedBaby.feeds || selectedBaby.feeds.length === 0) && (
                       <Text style={$noDataText}>No feeding data available</Text>
                     )}
+                  </View>
+
+                  {/* Tush Events Chart */}
+                  <View style={$chartCard} key="tushEvents">
+                    <Text style={$chartTitle}>Tush Events</Text>
+                    <Text style={$chartSubtitle}>Number of events</Text>
+                    <BarChart data={selectedBaby.tushData} width={screenWidth} height={220} chartConfig={chartConfig} fromZero showBarTops style={$chart} />
+                    {(!selectedBaby.tushData || selectedBaby.tushData.length === 0) && (
+                      <Text style={$noDataText}>No tush events available</Text>
+                      )}
                   </View>
                 </View>
               )}
