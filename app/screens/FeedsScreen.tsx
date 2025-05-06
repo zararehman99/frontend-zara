@@ -87,16 +87,14 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
           (item) => item.item === "Milk" && item.quantity > 0 && item.category === "Breast Milk",
         )
         .map((item) => getSnapshot(item))
-
-      setAvailablebreastMilkBottles(breastMilkBottles[0]?.quantity)
+      setAvailablebreastMilkBottles(breastMilkBottles[0]?.quantity || 0)
       setBreastMilkId(breastMilkBottles[0]?.id)
       const formulaMilkBottles = inventoryStore.inventoryForList
         .filter(
           (item) => item.item === "Milk" && item.quantity > 0 && item.category === "Formula Milk",
         )
         .map((item) => getSnapshot(item))
-
-      setAvailableformulaMilkBottles(formulaMilkBottles[0]?.quantity)
+      setAvailableformulaMilkBottles(formulaMilkBottles[0]?.quantity || 0)
       setFormulaMilkId(formulaMilkBottles[0]?.id)
     } catch (error) {
       console.error("Error loading inventory:", error)
