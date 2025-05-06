@@ -8,6 +8,7 @@ import {
   ViewStyle,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native"
 import { Button, Text, Screen, Icon } from "@/components"
 import { AppStackScreenProps } from "../navigators"
@@ -20,7 +21,7 @@ import { useStores } from "@/models"
 import { getSnapshot } from "mobx-state-tree"
 
 export interface Message {
-  type: "user" | "assistant"
+  type: "user" | "assistant" | "thinking"
   content: string
   timestamp?: Date
 }
@@ -35,6 +36,7 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
   } = useStores()
   const [threadId, setThreadId] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
+  const [isThinking, setIsThinking] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
       // id: "1",
@@ -158,6 +160,8 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
             if (done) {
               console.log("Stream closed")
               controller.close()
+              // Remove thinking indicator when stream is done
+              setIsThinking(false)
               return
             }
 
@@ -182,13 +186,19 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
                     const contentToStream = lastAiMessage.content
 
                     if (isFirstChunk) {
-                      // Initialize the first message
+                      // Initialize the first message and remove the thinking indicator
                       const assistantMessage: Message = {
                         type: "assistant",
                         content: contentToStream, // Set the content
                         timestamp: new Date(),
                       }
-                      setMessages((prev) => [...prev, assistantMessage])
+
+                      setMessages((prev) => {
+                        // Filter out the thinking message and add the assistant message
+                        const filteredMessages = prev.filter((msg) => msg.type !== "thinking")
+                        return [...filteredMessages, assistantMessage]
+                      })
+
                       isFirstChunk = false
                     } else {
                       const updatedContentToStream = contentToStream
@@ -233,11 +243,24 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
       timestamp: new Date(),
     }
 
+    // Add the message to the chat
+    setMessages((prevMessages) => [...prevMessages, userMessage])
+
+    // Add thinking indicator
+    setIsThinking(true)
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { type: "thinking", content: "Thinking...", timestamp: new Date() },
+    ])
+
+    const inputText = messageText
+    setMessageText("")
+
     const input = {
       messages: [
         {
           role: "user",
-          content: messageText,
+          content: inputText,
         },
       ],
       baby_profiles: babiesData,
@@ -249,26 +272,38 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
     }
 
     await streamRun(threadId, stream)
-
-    setMessages((prevMessages) => [...prevMessages, userMessage])
-    setMessageText("")
   }
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <View
-      style={[
-        themed($messageContainer),
-        item.type === "user" ? themed($userMessage) : themed($assistantMessage),
-      ]}
-    >
-      <Text style={item.type === "user" ? themed($userMessageText) : themed($assistantMessageText)}>
-        {item.content}
-      </Text>
-      <Text style={themed($timestampText)}>
-        {item?.timestamp?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </Text>
-    </View>
-  )
+  const renderMessage = ({ item }: { item: Message }) => {
+    if (item.type === "thinking") {
+      return (
+        <View style={[themed($messageContainer), themed($assistantMessage)]}>
+          <View style={themed($thinkingContainer)}>
+            <ActivityIndicator size="small" color={theme.colors.text} />
+            <Text style={themed($assistantMessageText)}>Thinking...</Text>
+          </View>
+        </View>
+      )
+    }
+
+    return (
+      <View
+        style={[
+          themed($messageContainer),
+          item.type === "user" ? themed($userMessage) : themed($assistantMessage),
+        ]}
+      >
+        <Text
+          style={item.type === "user" ? themed($userMessageText) : themed($assistantMessageText)}
+        >
+          {item.content}
+        </Text>
+        <Text style={themed($timestampText)}>
+          {item?.timestamp?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        </Text>
+      </View>
+    )
+  }
 
   return (
     <KeyboardAvoidingView
@@ -286,7 +321,12 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
         />
 
         {isLoading ? (
-          <View style={[$inputContainer, { justifyContent: "center", alignItems: "center", marginBottom: 20 }]}>
+          <View
+            style={[
+              $inputContainer,
+              { justifyContent: "center", alignItems: "center", marginBottom: 20 },
+            ]}
+          >
             <Text>Loading assistant...</Text>
           </View>
         ) : (
@@ -298,14 +338,20 @@ export const ChatScreen: FC<ChatScreenProps> = observer(function ChatScreen(_pro
               placeholder="Type a message..."
               placeholderTextColor={theme.colors.text}
               multiline
+              editable={!isThinking}
               onKeyPress={({ nativeEvent }) => {
                 if (nativeEvent.key === "Enter" && !nativeEvent.shiftKey) {
                   sendMessage()
                 }
               }}
             />
-            <Button preset="default" onPress={sendMessage} style={themed($sendButton)}>
-              <Icon icon="caretRight" />
+            <Button
+              preset="default"
+              onPress={sendMessage}
+              style={themed($sendButton)}
+              disabled={isThinking || messageText.trim() === ""}
+            >
+                <Icon icon="caretRight" />
             </Button>
           </View>
         )}
@@ -351,6 +397,12 @@ const $timestampText: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   color: colors.textDim,
   alignSelf: "flex-end",
   marginTop: spacing.xs,
+})
+
+const $thinkingContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: spacing.xs,
 })
 
 const $inputContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
