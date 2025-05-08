@@ -294,7 +294,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
       newAmount = availableformulaMilkBottles - feedAmount
       itemId = formulaMilkId
     } else {
-      newAmount = availablebreastMilkBottles - feedAmount 
+      newAmount = availablebreastMilkBottles - feedAmount
       itemId = breastMilkId
     }
     if (
@@ -347,15 +347,14 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
         })
         toggleModal()
         // Refresh baby data
-        childStore.getChildById(parseInt(babyId))
-        setBaby(childStore.getChildById(parseInt(babyId)))
+        await childStore.fetchChildren(userId)
 
         const item = {
           name: "Milk",
           quantity: newAmount,
           category: selectedCategory,
         }
-          await inventoryStore.updateItem(itemId, item)
+        await inventoryStore.updateItem(itemId, item)
       } else {
         const errorData = await response.json()
         Toast.show({

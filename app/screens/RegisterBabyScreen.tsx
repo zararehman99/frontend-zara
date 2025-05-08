@@ -25,6 +25,7 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
     const { navigation } = _props
     const {
       authenticationStore: { userId },
+      childStore,
     } = useStores()
 
     const [loading, setLoading] = useState(false)
@@ -91,6 +92,7 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
             autoHide: true,
             position: "top",
           })
+          await childStore.fetchChildren(userId)
           navigation.navigate("Welcome")
         } else {
           const errorData = await response.json()
