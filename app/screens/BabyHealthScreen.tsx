@@ -18,7 +18,7 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
   function BabyHealthSleepScreen(_props) {
     const { navigation, route } = _props
     const babyId = route.params.babyId
-    const { childStore } = useStores()
+    const { childStore, authenticationStore: { userId } } = useStores()
     const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
     const [baby, setBaby] = useState(null)
     const [sleepModalVisible, setSleepModalVisible] = useState(false)
@@ -71,6 +71,15 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
             autoHide: true,
             position: "top",
           })
+          await childStore.fetchChildren(userId)
+          const currentBaby = childStore.getChildById(parseInt(babyId))
+          setBaby(currentBaby)
+          if (currentBaby?.sleepLogs && currentBaby.sleepLogs.length > 0) {
+            const sortedSleepData = [...currentBaby.sleepLogs].sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+            )
+            setLastSleep(sortedSleepData[0])
+          }
           setSleepModalVisible(false)
         } else {
           const errorData = await response.json()
@@ -103,6 +112,9 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
             autoHide: true,
             position: "top",
           })
+          await childStore.fetchChildren(userId)
+          const currentBaby = childStore.getChildById(parseInt(babyId))
+          setBaby(currentBaby)
           setEntryModalVisible(false)
         } else {
           const errorData = await response.json()
