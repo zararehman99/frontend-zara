@@ -16,8 +16,8 @@ const BabyProfileCard = ({ baby }) => {
         <View style={styles.imageContainer}>
           <Image
             source={
-              baby.profilePic
-                ? { uri: baby.profilePic }
+              baby.imageBase
+                ? { uri: baby.imageBase }
                 : require("../../assets/images/baby_profile.jpg")
             }
             style={styles.image}

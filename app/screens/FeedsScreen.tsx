@@ -424,7 +424,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
       <Header title="Baby Feeds" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       <View style={$profileContainer}>
-        <Image source={babyImage} style={$profileImage} resizeMode="cover" />
+        <Image source={baby?.imageBase ? { uri: baby?.imageBase } : babyImage} style={$profileImage} />
 
         <View style={$profileInfo}>
           <Text style={$nameText}>Baby {baby?.name}</Text>

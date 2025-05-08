@@ -9,6 +9,7 @@ import {
   Image,
   ViewStyle,
   TextStyle,
+  ActivityIndicator,
 } from "react-native"
 import { Picker } from "@react-native-picker/picker"
 import { Screen } from "@/components"
@@ -49,6 +50,37 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
 
     // Check if all fields are filled
 
+    // Upload image to Cloudinary before submit
+    const uploadImageToCloudinary = async (base64Data: string) => {
+      const cloudName = 'dyx2rzyag';
+      const uploadPreset = 'poybruqz';
+      const folder = 'latch';
+    
+      const formData = new FormData();
+      formData.append('file', base64Data); // important: pass as a plain string
+      formData.append('upload_preset', uploadPreset);
+      formData.append('folder', folder); 
+    
+      try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+    
+        const data = await response.json();
+    
+        if (!response.ok) {
+          throw new Error(data.error?.message || 'Image upload failed');
+        }
+    
+        return data.secure_url;
+      } catch (error) {
+        console.error('Cloudinary Upload Error:', error);
+        throw error;
+      }
+    };
+    
+
     const handleSubmit = async () => {
       setLoading(true)
       // Validate form fields
@@ -76,12 +108,20 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
         return
       }
       try {
+        let uploadedImageUrl = ""
+        if (formData.imageUri) {
+          uploadedImageUrl = await uploadImageToCloudinary(formData.imageUri)
+        }
+        const finalFormData = {
+          ...formData,
+          imageUri: uploadedImageUrl, // replace local URI with cloud URL
+        }
         const response = await fetch(
           `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/create-baby/${userId}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
+            body: JSON.stringify(finalFormData),
           },
         )
         if (response.ok) {
@@ -198,8 +238,14 @@ export const RegisterBabyScreen: FC<RegisterBabyScreenProps> = observer(
           <TouchableOpacity
             style={$button} // Use disabled style if button is disabled
             onPress={handleSubmit}
-          >
+          >{loading ? (
+              <View style={$loadingWrapper}>
+              <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={$buttonText}>Submitting...</Text>
+            </View>
+            ) : (
             <Text style={$buttonText}>Submit</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </Screen>
@@ -338,6 +384,12 @@ const $button: ViewStyle = {
   shadowOpacity: 0.1,
   shadowRadius: 5,
   elevation: 3,
+}
+
+const $loadingWrapper: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
 }
 
 // const $disabledButton: ViewStyle = {
