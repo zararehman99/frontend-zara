@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite"
 import { FC, useEffect, useRef, useState } from "react"
-import { TextInput, TextStyle, TouchableOpacity, ViewStyle } from "react-native"
+import { ActivityIndicator, TextInput, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native"
 import { Screen, Text, TextField } from "@/components"
 import { AppStackScreenProps } from "@/navigators"
 import toast from "react-native-toast-message"
@@ -117,9 +117,34 @@ export const RegisterScreen: FC<AppStackScreenProps<"Register">> = observer(
           disabled={loading}
         /> */}
 
-        <TouchableOpacity style={$tapButton} onPress={handleSubmit} disabled={loading}>
-          <Text style={$buttonText}>Register</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  style={[
+    $tapButton,
+    (loading || !formData.email || !formData.firstName || !formData.lastName || !formData.password || !formData.confirmPassword || formData.password !== formData.confirmPassword)
+      ? { backgroundColor: "#9CA3AF" } // Gray if disabled
+      : {},
+  ]}
+  onPress={handleSubmit}
+  disabled={
+    loading ||
+    !formData.email ||
+    !formData.firstName ||
+    !formData.lastName ||
+    !formData.password ||
+    !formData.confirmPassword ||
+    formData.password !== formData.confirmPassword
+  }
+>
+  {loading ? (
+    <View style={$loadingWrapper}>
+    <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
+    <Text style={$buttonText}>Registering...</Text>
+  </View>
+  ) : (
+    <Text style={$buttonText}>Register</Text>
+  )}
+</TouchableOpacity>
+
 
         {/* <Button
           tx="registerScreen:goToLogin"
@@ -177,6 +202,12 @@ const $accountButton: ViewStyle = {
   borderRadius: 8,
   alignItems: "center",
   position: "relative",
+}
+
+const $loadingWrapper: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
 }
 
 // const $hint: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
