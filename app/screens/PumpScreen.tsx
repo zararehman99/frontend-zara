@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite"
 import { FC, useEffect, useState } from "react"
-import { Modal, View, ViewStyle, TextStyle, ScrollView } from "react-native"
+import { Modal, View, ViewStyle, TextStyle, ScrollView, ActivityIndicator } from "react-native"
 import { Button, Text, Screen, Header } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { useSafeAreaInsetsStyle } from "../utils/useSafeAreaInsetsStyle"
@@ -15,7 +15,7 @@ interface PumpScreenProps extends AppStackScreenProps<"Pump"> {}
 export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_props) {
   const { navigation, route } = _props
   const { babyId } = route.params
-  const { childStore } = useStores()
+  const { childStore, authenticationStore: { userId } } = useStores()
   const [baby, setBaby] = useState(null)
   const [lastSession, setLastSession] = useState(null)
 
@@ -23,6 +23,8 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
   const [sessionDurationError, setSessionDurationError] = useState("")
   const [sessionVolumeError, setSessionVolumeError] = useState("")
   const [inventoryAmountError, setInventoryAmountError] = useState("")
+
+  const [isLoading, setIsLoading] = useState(false)
 
   const [sessionFormData, setSessionFormData] = useState({
     sessionDuration: "",
@@ -47,6 +49,7 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
 
   const handleSavePumpSession = async () => {
     try {
+      setIsLoading(true)
       const response = await fetch(
         `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/pump-session`,
         {
@@ -63,6 +66,17 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
           autoHide: true,
           position: "top",
         })
+        await childStore.fetchChildren(userId)
+        const currentBaby = childStore.getChildById(parseInt(babyId))
+        setBaby(currentBaby)
+    
+        if (currentBaby?.pumpSessions && currentBaby.pumpSessions.length > 0) {
+          const sortedSessions = [...currentBaby.pumpSessions].sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+          )
+          setLastSession(sortedSessions[0])
+        }
+        setIsLoading(false)
         setSessionModalVisible(false)
       } else {
         const errorData = await response.json()
@@ -71,10 +85,12 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
           text1: errorData.message || "invalid info. Please try again",
           position: "top",
         })
+        setIsLoading(false)
       }
     } catch (error) {
       console.error("Error:", error)
       Toast.show({ type: "error", text1: "An unexpected error occurred. Pleas try again" })
+      setIsLoading(false)
     }
   }
 
@@ -249,7 +265,7 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
             {sessionVolumeError ? <Text style={{ color: "red" }}>{sessionVolumeError}</Text> : null}
             <View style={$buttonContainer}>
               <Button
-                disabled={!sessionFormData.sessionVolume || !sessionFormData.sessionDuration}
+                disabled={!sessionFormData.sessionVolume || !sessionFormData.sessionDuration || isLoading}
                 style={[
                   $button,
                   (!sessionFormData.sessionVolume || !sessionFormData.sessionDuration) &&
@@ -258,7 +274,14 @@ export const PumpScreen: FC<PumpScreenProps> = observer(function PumpScreen(_pro
                 textStyle={$buttonText}
                 onPress={handleSavePumpSession}
               >
-                Save
+                {isLoading ? (
+    <View style={$loadingWrapper}>
+                  <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
+                  <Text style={$buttonText}>Saving...</Text>
+                </View>
+  ) : (
+    "Save"
+  )}
               </Button>
               <Button
                 style={$cancelButton}
@@ -478,4 +501,10 @@ const $buttonText: TextStyle = {
   color: "#FFFFFF",
   fontSize: 16,
   fontWeight: "bold",
+}
+
+const $loadingWrapper: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
 }

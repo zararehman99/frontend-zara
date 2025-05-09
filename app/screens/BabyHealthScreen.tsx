@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite"
 import { FC, useEffect, useState } from "react"
-import { Modal, View, ViewStyle, TextStyle, ScrollView } from "react-native"
+import { Modal, View, ViewStyle, TextStyle, ScrollView, ActivityIndicator } from "react-native"
 import { Button, Text, Screen, Header } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { Picker } from "@react-native-picker/picker"
@@ -36,6 +36,7 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
     const [diaperChangeError, setDiaperChangeError] = useState("")
     const [temperatureError, setTemperatureError] = useState("")
     const [lastSleep, setLastSleep] = useState(null)
+    const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
       // If this method triggers an async fetch but returns the current value synchronously
@@ -55,6 +56,7 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
 
     const handleSaveSleepLog = async () => {
       try {
+        setIsLoading(true)
         const response = await fetch(
           `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/sleep-log`,
           {
@@ -80,6 +82,7 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
             )
             setLastSleep(sortedSleepData[0])
           }
+          setIsLoading(false)
           setSleepModalVisible(false)
         } else {
           const errorData = await response.json()
@@ -88,14 +91,17 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
             text1: errorData.message || "invalid info. Please try again",
             position: "top",
           })
+          setIsLoading(false)
         }
       } catch (error) {
         console.error("Error:", error)
         Toast.show({ type: "error", text1: "An unexpected error occurred. Pleas try again" })
+        setIsLoading(false)
       }
     }
     const handleSaveHealthLog = async () => {
       try {
+        setIsLoading(true)
         const response = await fetch(
           `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/health-log`,
           {
@@ -115,6 +121,7 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
           await childStore.fetchChildren(userId)
           const currentBaby = childStore.getChildById(parseInt(babyId))
           setBaby(currentBaby)
+          setIsLoading(false)
           setEntryModalVisible(false)
         } else {
           const errorData = await response.json()
@@ -123,10 +130,12 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
             text1: errorData.message || "invalid info. Please try again",
             position: "top",
           })
+          setIsLoading(false)
         }
       } catch (error) {
         console.error("Error:", error)
         Toast.show({ type: "error", text1: "An unexpected error occurred. Pleas try again" })
+        setIsLoading(false)
       }
     }
 
@@ -167,6 +176,10 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
                 <>
                   <Text style={$cardText}>Duration: {formatDuration(lastSleep.durationMins)}</Text>
                   <Text style={$cardText}>Quality: {lastSleep?.sleepQuality}</Text>
+                </>
+              ) : (
+                <Text style={$cardText}>No sleep data available.</Text>
+              )}
                   <Button
                     style={$trackerButton}
                     textStyle={$buttonText}
@@ -174,10 +187,6 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
                   >
                     Record Sleep
                   </Button>
-                </>
-              ) : (
-                <Text style={$cardText}>No sleep data available.</Text>
-              )}
             </View>
           </View>
 
@@ -274,7 +283,7 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
               {/* <TextInput style={$input} placeholder="Enter sleep quality (e.g., Good)" /> */}
               <View style={$buttonContainer}>
                 <Button
-                  disabled={!sleepFormData.sleepDuration || !sleepFormData.sleepQuality}
+                  disabled={!sleepFormData.sleepDuration || !sleepFormData.sleepQuality || isLoading}
                   style={[
                     $button,
                     (!sleepFormData.sleepDuration || !sleepFormData.sleepQuality) &&
@@ -282,7 +291,14 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
                   ]}
                   onPress={handleSaveSleepLog}
                 >
-                  <Text style={$buttonText}> Save </Text>
+                  {isLoading ? (
+                      <View style={$loadingWrapper}>
+                                    <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
+                                    <Text style={$buttonText}>Saving...</Text>
+                                  </View>
+                    ) : (
+                      <Text style={$buttonText}>Save</Text>
+                    )}
                 </Button>
                 <Button
                   style={$cancelButton}
@@ -340,7 +356,14 @@ export const BabyHealthSleepScreen: FC<BabyHealthSleepScreenProps> = observer(
                   ]}
                   onPress={handleSaveHealthLog}
                 >
-                  <Text style={$buttonText}>Save</Text>
+                  {isLoading ? (
+                      <View style={$loadingWrapper}>
+                                    <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
+                                    <Text style={$buttonText}>Saving...</Text>
+                                  </View>
+                    ) : (
+                      <Text style={$buttonText}>Save</Text>
+                    )}
                 </Button>
                 <Button
                   style={$cancelButton}
@@ -509,4 +532,10 @@ const $buttonText: TextStyle = {
   color: "#FFFFFF",
   fontSize: 16,
   fontWeight: "bold",
+}
+
+const $loadingWrapper: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
 }

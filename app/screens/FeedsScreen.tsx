@@ -9,6 +9,7 @@ import {
   ViewStyle,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native"
 import { Button, Header, Screen, Text } from "@/components"
 import { AppStackScreenProps } from "../navigators"
@@ -47,6 +48,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
   const leftTimerRef = useRef(null)
   const rightTimerRef = useRef(null)
   const startTimeRef = useRef(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     feedType: "breastfeeding", // breastfeeding or bottle
@@ -259,6 +261,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
   }
 
   const handleSaveFeed = async () => {
+    setIsLoading(true)
     // Ensure timers are stopped
     if (leftTimerActive) {
       stopLeftTimer()
@@ -278,11 +281,13 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
     // Validate based on feed type
     if (formData.feedType === "bottle" && !formData.amount) {
       setAmountError("Please enter the amount for bottle feeding")
+      setIsLoading(false)
       return
     }
 
     if (formData.feedType === "breastfeeding" && getTotalDuration() === 0) {
       setDurationError("Please track or enter duration for at least one breast")
+      setIsLoading(false)
       return
     }
 
@@ -305,6 +310,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
       setAmountError(
         `Not enough formula milk. You need ${feedAmount} mL, but only ${availableformulaMilkBottles} mL available.`,
       )
+      setIsLoading(false)
       return
     }
 
@@ -316,6 +322,7 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
       setAmountError(
         `Not enough breast milk. You need ${feedAmount} mL, but only ${availablebreastMilkBottles} mL available.`,
       )
+      setIsLoading(false)
       return
     }
 
@@ -345,9 +352,10 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
           autoHide: true,
           position: "top",
         })
-        toggleModal()
         // Refresh baby data
         await childStore.fetchChildren(userId)
+        setIsLoading(false)
+        toggleModal()
 
         const item = {
           name: "Milk",
@@ -362,10 +370,12 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
           text1: errorData.message || "Invalid info. Please try again",
           position: "top",
         })
+        setIsLoading(false)
       }
     } catch (error) {
       console.error("Error:", error)
       Toast.show({ type: "error", text1: "An unexpected error occurred. Please try again" })
+      setIsLoading(false)
     }
   }
 
@@ -659,7 +669,14 @@ export const FeedsScreen: FC<FeedsScreenProps> = observer(function FeedsScreen(_
                 ]}
                 onPress={handleSaveFeed}
               >
-                <Text style={$buttonText}>Save Feed</Text>
+                {isLoading ? (
+                                      <View style={$loadingWrapper}>
+                                                    <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
+                                                    <Text style={$buttonText}>Saving...</Text>
+                                                  </View>
+                                    ) : (
+                                      <Text style={$buttonText}>Save Feed</Text>
+                                    )}
               </Button>
               <Button style={$cancelButton} onPress={toggleModal}>
                 <Text style={$buttonText}>Cancel</Text>
@@ -1008,4 +1025,10 @@ const $cancelButton: ViewStyle = {
   flex: 1,
   backgroundColor: "#EF4444",
   marginLeft: 5,
+}
+
+const $loadingWrapper: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
 }
