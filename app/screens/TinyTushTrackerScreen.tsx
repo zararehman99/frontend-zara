@@ -26,7 +26,7 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
   function TinyTushTrackerScreen(_props) {
     const { navigation, route } = _props
     const babyId = route.params.babyId
-    const { childStore } = useStores()
+    const { childStore, authenticationStore: { userId } } = useStores()
     const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
     const [baby, setBaby] = useState(null)
     const [tushModalVisible, setTushModalVisible] = useState(false)
@@ -146,6 +146,7 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
             autoHide: true,
             position: "top",
           })
+          await childStore.fetchChildren(userId)
           const fetchedBaby = childStore.getChildById(parseInt(babyId))
           setBaby(fetchedBaby)
           setTushLogs(formatTushLogs(fetchedBaby?.tushLogs))
