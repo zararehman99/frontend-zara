@@ -2,6 +2,7 @@ import { observer } from "mobx-react-lite"
 import Toast from "react-native-toast-message"
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
 import { TextInput, ImageBackground, TextStyle, ViewStyle, TouchableOpacity } from "react-native"
+import { Image } from 'react-native';
 import { Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "../components"
 import { useStores } from "../models"
 import { AppStackScreenProps } from "../navigators"
@@ -11,6 +12,7 @@ import { ActivityIndicator } from "react-native"
 import configDev from "@/config/config.dev"
 
 const loginFace = require("../../assets/images/loginFace.jpg")
+const LatchLogo = require("../../assets/images/latchLogo.png")
 
 export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function LoginScreen({
   navigation,
@@ -150,6 +152,7 @@ export const LoginScreen: FC<AppStackScreenProps<"Login">> = observer(function L
       <ImageBackground source={loginFace} style={$backgroundImage} resizeMode="cover">
         {" "}
       </ImageBackground>
+      <Image source={LatchLogo} style={$logo} resizeMode="contain" />
       {/* <ImageBackground source={loginLogo} style={$logo} resizeMode="cover"></ImageBackground> */}
 
       <Text
@@ -283,4 +286,12 @@ const $accountButton: ViewStyle = {
   borderRadius: 8,
   alignItems: "center",
   position: "relative",
+}
+
+const $logo: ViewStyle = {
+  width: 150,
+  height: 150,
+  alignSelf: "center",
+  position: "absolute",
+  top: 10, 
 }

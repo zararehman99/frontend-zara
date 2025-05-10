@@ -1,6 +1,14 @@
 import { observer } from "mobx-react-lite"
 import { FC, useState, useEffect } from "react"
-import { Modal, View, ViewStyle, TextStyle, ScrollView, TouchableOpacity } from "react-native"
+import {
+  Modal,
+  View,
+  ViewStyle,
+  TextStyle,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native"
 import { Button, Text, Screen, Header } from "@/components"
 import { AppStackScreenProps } from "../navigators"
 import { Picker } from "@react-native-picker/picker"
@@ -24,6 +32,7 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
     const [tushModalVisible, setTushModalVisible] = useState(false)
     const [tushLogs, setTushLogs] = useState([])
     const [tushType, setTushType] = useState("")
+    const [loading, setLoading] = useState(false)
     const [tushDataForm, setTushDataForm] = useState({
       stoolFrequency: "",
       stoolConsistency: "",
@@ -36,50 +45,56 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
 
     const formatTushLogs = (rawLogs) => {
       if (!rawLogs || !Array.isArray(rawLogs)) return []
-      
-      return rawLogs.map(log => {
-        // Format date and time from createdAt
-        const date = new Date(log.createdAt)
-        const formattedDate = format(date, "yyyy-MM-dd")
-        const formattedTime = format(date, "h:mm a")
-        
-        // Generate meaningful details based on log data
-        let details = ""
-        if (log.eventType === "poop") {
-          details = log.stoolConsistency ? `Consistency: ${log.stoolConsistency}` : ""
-          if (log.stoolFrequency) {
-            details += details ? `, Frequency: ${log.stoolFrequency}` : `Frequency: ${log.stoolFrequency}`
+
+      return rawLogs
+        .map((log) => {
+          // Format date and time from createdAt
+          const date = new Date(log.createdAt)
+          const formattedDate = format(date, "yyyy-MM-dd")
+          const formattedTime = format(date, "h:mm a")
+
+          // Generate meaningful details based on log data
+          let details = ""
+          if (log.eventType === "poop") {
+            details = log.stoolConsistency ? `Consistency: ${log.stoolConsistency}` : ""
+            if (log.stoolFrequency) {
+              details += details
+                ? `, Frequency: ${log.stoolFrequency}`
+                : `Frequency: ${log.stoolFrequency}`
+            }
+          } else if (log.eventType === "urine") {
+            details = log.diaperCondition ? `Diaper: ${log.diaperCondition}` : ""
           }
-        } else if (log.eventType === "urine") {
-          details = log.diaperCondition ? `Diaper: ${log.diaperCondition}` : ""
-        }
-        
-        // Add abnormalities and notes if present
-        if (log.abnormalities) {
-          details += details ? `\nAbnormalities: ${log.abnormalities}` : `Abnormalities: ${log.abnormalities}`
-        }
-        if (log.additionalNotes) {
-          details += details ? `\nNotes: ${log.additionalNotes}` : `Notes: ${log.additionalNotes}`
-        }
-        
-        // If no details at all, add a placeholder
-        if (!details) {
-          details = "No additional details"
-        }
-        
-        return {
-          id: log.id,
-          date: formattedDate,
-          time: formattedTime,
-          eventType: log.eventType.charAt(0).toUpperCase() + log.eventType.slice(1), // Capitalize first letter
-          details
-        }
-      }).sort((a, b) => {
-        // Sort by date and time (newest first)
-        const dateA = new Date(`${a.date} ${a.time}`)
-        const dateB = new Date(`${b.date} ${b.time}`)
-        return dateB - dateA
-      })
+
+          // Add abnormalities and notes if present
+          if (log.abnormalities) {
+            details += details
+              ? `\nAbnormalities: ${log.abnormalities}`
+              : `Abnormalities: ${log.abnormalities}`
+          }
+          if (log.additionalNotes) {
+            details += details ? `\nNotes: ${log.additionalNotes}` : `Notes: ${log.additionalNotes}`
+          }
+
+          // If no details at all, add a placeholder
+          if (!details) {
+            details = "No additional details"
+          }
+
+          return {
+            id: log.id,
+            date: formattedDate,
+            time: formattedTime,
+            eventType: log.eventType.charAt(0).toUpperCase() + log.eventType.slice(1), // Capitalize first letter
+            details,
+          }
+        })
+        .sort((a, b) => {
+          // Sort by date and time (newest first)
+          const dateA = new Date(`${a.date} ${a.time}`)
+          const dateB = new Date(`${b.date} ${b.time}`)
+          return dateB - dateA
+        })
     }
 
     useEffect(() => {
@@ -89,7 +104,28 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
     }, [babyId])
 
     const handleSaveTushData = async () => {
-      console.log("tush data form", tushDataForm)
+      setLoading(true)
+      console.log("TUSH Type", tushType)
+      const missingFields: string[] = []
+      if (tushType === "poop" && !tushDataForm.stoolConsistency)
+        missingFields.push("stool consistency")
+      if (tushType === "poop" && !tushDataForm.stoolFrequency) missingFields.push("stool frequency")
+      if (tushType === "urine" && !tushDataForm.diaperCondition)
+        missingFields.push("diaper condition")
+
+      // If any fields are missing, show toast and return
+      if (missingFields.length > 0) {
+        const missingFieldsMessage = `Please fill in the following fields:`
+        const missingFieldsList = missingFields.join("\n")
+        Toast.show({
+          type: "error",
+          text1: missingFieldsMessage,
+          text2: missingFieldsList,
+          position: "top",
+        })
+        setLoading(false)
+        return
+      }
       try {
         const response = await fetch(
           `${configDev.VITE_LATCH_BACKEND_URL}/api/babies/${babyId}/tush-log`,
@@ -110,6 +146,10 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
             autoHide: true,
             position: "top",
           })
+          const fetchedBaby = childStore.getChildById(parseInt(babyId))
+          setBaby(fetchedBaby)
+          setTushLogs(formatTushLogs(fetchedBaby?.tushLogs))
+          setLoading(false)
           setTushModalVisible(false)
           // Here you would ideally refresh logs
         } else {
@@ -119,10 +159,12 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
             text1: errorData.message || "Invalid info. Please try again",
             position: "top",
           })
+          setLoading(false)
         }
       } catch (error) {
         console.error("Error:", error)
         Toast.show({ type: "error", text1: "An unexpected error occurred. Please try again." })
+        setLoading(false)
       }
     }
 
@@ -172,7 +214,12 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
                         <Text style={$logDate}>{log.date}</Text>
                         <Text style={$logTime}>{log.time}</Text>
                       </View>
-                      <View style={[$badgeContainer, log.eventType === "Poop" ? $poopBadge : $urineBadge]}>
+                      <View
+                        style={[
+                          $badgeContainer,
+                          log.eventType === "Poop" ? $poopBadge : $urineBadge,
+                        ]}
+                      >
                         <Text style={$badgeText}>{log.eventType}</Text>
                       </View>
                     </View>
@@ -206,21 +253,21 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
                 </View>
                 <Text style={$tipText}>Keep baby's diaper dry and clean</Text>
               </View>
-              
+
               <View style={$tipItem}>
                 <View style={$tipIcon}>
                   <Text style={$tipIconText}>🧴</Text>
                 </View>
                 <Text style={$tipText}>Apply diaper rash cream after changes</Text>
               </View>
-              
+
               <View style={$tipItem}>
                 <View style={$tipIcon}>
                   <Text style={$tipIconText}>🧼</Text>
                 </View>
                 <Text style={$tipText}>Always wash hands after diaper changes</Text>
               </View>
-              
+
               <Button
                 style={$infoButton}
                 textStyle={$buttonText}
@@ -246,7 +293,7 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
               <ScrollView style={$modalScrollView}>
                 <View style={$formSection}>
                   <Text style={$formSectionTitle}>Event Details</Text>
-                  
+
                   {/* Date and Time */}
                   <View style={$formRow}>
                     <View style={$formHalfColumn}>
@@ -280,10 +327,9 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
                       ]}
                       onPress={() => setTushType("poop")}
                     >
-                      <Text style={[
-                        $typeButtonText,
-                        tushType === "poop" && $typeButtonTextActive
-                      ]}>💩 Poop</Text>
+                      <Text style={[$typeButtonText, tushType === "poop" && $typeButtonTextActive]}>
+                        💩 Poop
+                      </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
@@ -293,10 +339,11 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
                       ]}
                       onPress={() => setTushType("urine")}
                     >
-                      <Text style={[
-                        $typeButtonText,
-                        tushType === "urine" && $typeButtonTextActive
-                      ]}>💧 Urine</Text>
+                      <Text
+                        style={[$typeButtonText, tushType === "urine" && $typeButtonTextActive]}
+                      >
+                        💧 Urine
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -304,7 +351,7 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
                 {tushType === "poop" && (
                   <View style={$formSection}>
                     <Text style={$formSectionTitle}>Stool Details</Text>
-                    
+
                     {/* Stool Consistency */}
                     <Text style={$inputLabel}>Consistency</Text>
                     <View style={$input}>
@@ -342,7 +389,7 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
                 {tushType === "urine" && (
                   <View style={$formSection}>
                     <Text style={$formSectionTitle}>Urine Details</Text>
-                    
+
                     {/* Diaper Condition */}
                     <Text style={$inputLabel}>Diaper Condition</Text>
                     <View style={$input}>
@@ -364,7 +411,7 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
                 {tushType && (
                   <View style={$formSection}>
                     <Text style={$formSectionTitle}>Additional Information</Text>
-                    
+
                     {/* Abnormalities */}
                     <Text style={$inputLabel}>Any abnormalities or concerns?</Text>
                     <TextInput
@@ -392,12 +439,31 @@ export const TinyTushTrackerScreen: FC<TinyTushTrackerScreenProps> = observer(
 
               <View style={$modalFooter}>
                 <Button
-                  disabled={!tushType}
-                  style={[$saveButton, !tushType && $disabledButton]}
+                  disabled={
+                    !tushType ||
+                    (tushType === "poop" &&
+                      (!tushDataForm.stoolConsistency || !tushDataForm.stoolFrequency)) ||
+                    (tushType === "urine" && !tushDataForm.diaperCondition)
+                  }
+                  style={[
+                    $saveButton,
+                    (!tushType ||
+                      (tushType === "poop" &&
+                        (!tushDataForm.stoolConsistency || !tushDataForm.stoolFrequency)) ||
+                      (tushType === "urine" && !tushDataForm.diaperCondition)) &&
+                      $disabledButton,
+                  ]}
                   textStyle={$saveButtonText}
                   onPress={handleSaveTushData}
                 >
-                  Save Event
+                  {loading ? (
+                    <View style={$loadingWrapper}>
+                      <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
+                      <Text style={$buttonText}>Saving...</Text>
+                    </View>
+                  ) : (
+                    <Text style={$buttonText}>Save Event</Text>
+                  )}
                 </Button>
               </View>
             </View>
@@ -738,4 +804,10 @@ const $infoButton: ViewStyle = {
   borderRadius: 12,
   padding: 16,
   marginTop: 10,
+}
+
+const $loadingWrapper: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
 }
