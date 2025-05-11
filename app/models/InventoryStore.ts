@@ -117,24 +117,24 @@ export const InventoryStoreModel = types
           body: JSON.stringify(updatedItem),
         }
       )
-      if (response.ok) {
-        Toast.show({
-          type: "success",
-          text1: "Item updated successfully",
-        })
-      } else {
-        const errorData = yield response.json()
-        Toast.show({
-          type: "error",
-          text1: errorData.message || "Failed to update item.",
-        })
-      }
+      // if (response.ok) {
+      //   Toast.show({
+      //     type: "success",
+      //     text1: "Item updated successfully",
+      //   })
+      // } else {
+      //   const errorData = yield response.json()
+      //   Toast.show({
+      //     type: "error",
+      //     text1: errorData.message || "Failed to update item.",
+      //   })
+      // }
     } catch (error) {
       console.error("Error updating item:", error)
-      Toast.show({
-        type: "error",
-        text1: "Network error while updating item.",
-      })
+      // Toast.show({
+      //   type: "error",
+      //   text1: "Network error while updating item.",
+      // })
     }
   })
 }))
